@@ -45,8 +45,10 @@ def run_compute_mmix_grid(filename,Mhalo,vturb,lturb,tmax,dt,tmin=0.0):
 
 
 if __name__=="__main__":
+    mmixgrid_foldername = "MMIXGRID/"
+
     ## Compute Minihalo
-    filename='mmixgrid_minihalo'
+    filename=mmixgrid_foldername+'mmixgrid_minihalo'
     Mhalo = 10.**6
     vturb = 2. #km/s
     lturb = .01 #kpc
@@ -55,10 +57,10 @@ if __name__=="__main__":
     run_compute_mmix_grid(filename,Mhalo,vturb,lturb,tmax,dt)
 
     ## Compute Fat Minihalo
-    filename='mmixgrid_fatminihalo'
+    filename=mmixgrid_foldername+'mmixgrid_fatminihalo'
 
     ## Compute Atomic Cooling Halo
-    filename='mmixgrid_atomiccoolinghalo'
+    filename=mmixgrid_foldername+'mmixgrid_atomiccoolinghalo'
     Mhalo = 10.**8
     vturb = 10. #km/s
     lturb = .1 #kpc
