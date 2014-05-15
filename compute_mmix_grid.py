@@ -23,9 +23,9 @@ def run_compute_mmix_grid(filename,Mhalo,vturb,lturb,tmax,dt,tmin=0.0):
     th = TopHat(Mhalo=Mhalo,nvir=0.1,fb=0.1551,mu=1.4)
     RHO = th.get_rho_of_t_fn()
     VMIX = karlsson.get_Vmixfn_K08(RHO,Dt=Dt)
-    FILENAME = filename#+"Mmixgrid_K08_tmax"+str(tmax)+"_dt"+str(dt)
+    MMIXGRID_FILENAME = karlsson.get_mmixgrid_filename(filename)
 
-    f = h5py.File(FILENAME+'.hdf5',"w")
+    f = h5py.File(MMIXGRID_FILENAME,"w")
     print "computing mmixgrid with midpoint (may take a long time)"
     start = time.time()
     tarr,tauarr,Mmixgrid = karlsson.calc_Mmix_grid_fast(VMIX,RHO,
@@ -42,30 +42,32 @@ def run_compute_mmix_grid(filename,Mhalo,vturb,lturb,tmax,dt,tmin=0.0):
     f['tauarr']=tauarr
     f['Mmixgrid']=Mmixgrid
     f.close()
-
+    print "Wrote",MMIXGRID_FILENAME
 
 if __name__=="__main__":
-    mmixgrid_foldername = "MMIXGRID/"
-
     ## Compute Minihalo
-    filename=mmixgrid_foldername+'mmixgrid_minihalo'
-    Mhalo = 10.**6
-    vturb = 2. #km/s
-    lturb = .01 #kpc
+    Mhalo,vturb,lturb,nSN,trecovery = karlsson.params_minihalo()
     tmax = 100. #Myr
-    dt = 0.01
+    dt = 0.003
+    if dt == 0.01:
+        filename='lores_minihalo'
+    if dt == 0.003:
+        filename='minihalo'
+    if dt == 0.001:
+        filename='hires_minihalo'
     run_compute_mmix_grid(filename,Mhalo,vturb,lturb,tmax,dt)
 
     ## Compute Fat Minihalo
-    filename=mmixgrid_foldername+'mmixgrid_fatminihalo'
+    filename='fatminihalo'
 
     ## Compute Atomic Cooling Halo
-    filename=mmixgrid_foldername+'mmixgrid_atomiccoolinghalo'
-    Mhalo = 10.**8
-    vturb = 10. #km/s
-    lturb = .1 #kpc
+    Mhalo,vturb,lturb,nSN,trecovery = karlsson.params_atomiccoolinghalo()
     tmax = 1000. #Myr
-    dt = 0.1
+    dt = 0.03
+    if dt == 0.1:
+        filename='lores_atomiccoolinghalo'
+    if dt == 0.03:
+        filename='atomiccoolinghalo'
+    if dt == 0.01:
+        filename='hires_atomiccoolinghalo'
     run_compute_mmix_grid(filename,Mhalo,vturb,lturb,tmax,dt)
-
-    

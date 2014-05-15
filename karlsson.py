@@ -9,6 +9,31 @@ import time
 from multiprocessing import Pool
 import functools
 
+def MbinsMplot(Mmin,Mmax,dM):
+    Mbins = np.arange(Mmin,Mmax+dM,dM)
+    Mplot = np.arange(Mmin,Mmax,dM)+dM/2.
+    return Mbins,Mplot
+def logMbinsMplot(logMmin,logMmax,logdM):
+    Mbins = 10.**np.arange(logMmin,logMmax+logdM/2.,logdM)
+    Mplot = 10.**(np.arange(logMmin,logMmax,logdM)+logdM/2.)
+    return Mbins,Mplot
+    
+def params_minihalo():
+    #Mhalo/Msun, vturb/km/s, lturb/kpc, nSN, trecovery/Myr
+    return 10.**6,2.,.01,2,10
+def params_atomiccoolinghalo():
+    #Mhalo/Msun, vturb/km/s, lturb/kpc, nSN, trecovery/Myr
+    return 10.**8,10.,.1,10,300
+
+def get_mmixgrid_filename(filename,mmixgrid_foldername = "MMIXGRIDS"):
+    return mmixgrid_foldername+'/'+filename+'_mmixgrid.hdf5'
+def get_fMk_filename(filename,k,mmixdistr_foldername = "MMIXDISTR"):
+    return mmixdistr_foldername+'/'+filename+'_fM'+str(k)+'.npy'
+def get_Mbins_filename(filename,mmixdistr_foldername = "MMIXDISTR"):
+    return mmixdistr_foldername+'/'+filename+'_Mbins.npy'
+def get_Mplot_filename(filename,mmixdistr_foldername = "MMIXDISTR"):
+    return mmixdistr_foldername+'/'+filename+'_Mplot.npy'
+
 def calc_sigE(t,rho_of_t,Mdil):
     """ Calculate initial dilution radius for Vmix_karlsson08 (kpc) """
     return ((Mdil*3.*1.989*10**33)/(rho_of_t(t)*4*np.pi))**(1./3) / (3.086 * 10**21)
