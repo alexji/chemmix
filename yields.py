@@ -7,7 +7,7 @@
 import numpy as np
 import os
 
-class yieldsbase:
+class yieldsbase(object):
     """ Base functions for yield classes """
     def clean_sn_type_input(self,sn_type):
         try:
@@ -78,7 +78,7 @@ class nomoto06interpyields(yieldsbase):
         if not os.path.exists(datafile) and autointerpolate:
             self.create_interp_nomoto06_yields()
         self.yieldarr = np.load(datafile)
-        self.yieldfn = None #directly index the array, redefining get_yields
+        #self.yieldfn = None #directly index the array, redefining get_yields
         
     def get_yields(self,sn_type):
         sn_type = self.clean_sn_type_input(sn_type).reshape(-1)
@@ -107,6 +107,26 @@ class nomoto06interpyields(yieldsbase):
         #    plt.plot(Moutput,outputarr[:,j],'o-')
         #    plt.xlabel('M'); plt.ylabel(elemarr[j])
         #plt.savefig("PLOTS/interp_nomoto06_z0.png")
+
+class nomoto06interpyields_Cenhance(nomoto06interpyields):
+    def __init__(self,p=0.1,f=100.,
+                 datafile="YIELDDATA/interp_nomoto06_z0.npy",autointerpolate=True):
+        super(nomoto06interpyields_Cenhance,self).__init__(datafile=datafile,autointerpolate=autointerpolate)
+        self.p = p; self.f = float(f)
+        self.name += (" Carbon enhanced p=%0.3f f=%0.1f" % (self.p, self.f))
+        self.shortname += ("p%0.3ff%0.1f" % (self.p, self.f))
+        self.numtypes *= 2
+        self.yieldarr = np.concatenate([self.yieldarr,self.yieldarr])
+        assert self.yieldarr.shape == (self.numtypes,self.numyields)
+        self.yieldarr[0:(self.numtypes/2),0] *= self.f #enhance carbon in the first half
+        print "--Cenhance: use modify_sntypepdf(sntypepdf) as the sntypepdf"
+        
+    def modify_sntypepdf(self,sntypepdf):
+        sntypepdf /= np.sum(sntypepdf) #normalize
+        newpdf = np.concatenate([self.p*sntypepdf,(1-self.p)*sntypepdf])
+        print newpdf,newpdf.shape,np.sum(newpdf)
+        assert np.abs(np.sum(newpdf) - 1.0) < 3*np.finfo(float).eps
+        return newpdf
 
 #def _simple_yields(sn_type):
 #    if sn_type==1:
