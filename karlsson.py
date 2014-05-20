@@ -211,12 +211,12 @@ def calc_fMk(k,Mbins,DMlist,Vmix,wISM,mufn,SFR,normalize=True):
         fMk = fMk/np.sum(fMk)
     return fMk
 
-def draw_from_distr(N,x,pdf,seed=None):
+def draw_from_distr(N,x,pdf,seed=None,eps=10**-10):
     if seed!=None:
         random.seed(seed)
     unifarr = random.rand(N)
     cdf = np.cumsum(pdf)
-    assert np.abs(cdf[-1] - 1.0) < 10**-8, 'cdf[-1] != 1.0 (to tolerance of 10^-8): %f' % (cdf[-1])
+    assert np.abs(cdf[-1] - 1.0) < eps, 'cdf[-1] != 1.0 (to tolerance of %e): %f' % (eps,cdf[-1])
     cdf[-1]=1
     return np.array(x[np.searchsorted(cdf,unifarr)])
 

@@ -40,6 +40,7 @@ def run_compute_random_sn(filename,sntypepdf,yieldobj,kmax,
     masstonum = 1.0/(yieldobj.elemmass * XH)
     output = np.zeros((Nstars,yieldobj.numyields,kmax))
     sntypearr = np.arange(1,yieldobj.numtypes+1)
+    assert len(sntypepdf)==len(sntypearr) #consistency check
 
     pool = Pool(numprocs)
     print "Using",numprocs,"processors to run",filename,"with N =",Nstars
@@ -70,12 +71,25 @@ def run_compute_random_sn(filename,sntypepdf,yieldobj,kmax,
     #np.save(FILENAME+"_chemgrid_N06_Cenhanced_p0.1_N"+str(Nstars),output)
 
 if __name__=="__main__":
+    reload(yields)
+    NUMPROCS = 10
     n06y = yields.nomoto06interpyields()
     sntypepdf = relative_imf(n06y.massarr,2.35,norm=True) #salpeter imf
+
+    n06p1 = yields.nomoto06interpyields_Cenhance(p=0.1,f=100)
+    Csntypepdf = n06p1.modify_sntypepdf(sntypepdf)
+
     #run_compute_random_sn('minihalo',sntypepdf,n06y,10,
     #                      headernotes='salpeter imf',
-    #                      Nstars=10**6,numprocs=20)
-
-    run_compute_random_sn('atomiccoolinghalo',sntypepdf,n06y,15,
+    #                      Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghalo',sntypepdf,n06y,15,
+    #                      headernotes='salpeter imf',
+    #                      Nstars=10**6,numprocs=NUMPROCS)
+    
+    run_compute_random_sn('minihalo',Csntypepdf,n06p1,10,
                           headernotes='salpeter imf',
-                          Nstars=10**6,numprocs=20)
+                          Nstars=10**6,numprocs=NUMPROCS)
+    run_compute_random_sn('atomiccoolinghalo',Csntypepdf,n06p1,15,
+                          headernotes='salpeter imf',
+                          Nstars=10**6,numprocs=NUMPROCS)
+    
