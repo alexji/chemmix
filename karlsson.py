@@ -33,6 +33,8 @@ def get_Mbins_filename(filename,mmixdistr_foldername = "MMIXDISTR"):
     return mmixdistr_foldername+'/'+filename+'_Mbins.npy'
 def get_Mplot_filename(filename,mmixdistr_foldername = "MMIXDISTR"):
     return mmixdistr_foldername+'/'+filename+'_Mplot.npy'
+def get_chemgrid_filename(filename,chemgrid_foldername = "CHEMGRIDS",postfix=''):
+    return chemgrid_foldername+'/'+filename+'_chemgrid'+postfix+'.hdf5'
 
 def calc_sigE(t,rho_of_t,Mdil):
     """ Calculate initial dilution radius for Vmix_karlsson08 (kpc) """

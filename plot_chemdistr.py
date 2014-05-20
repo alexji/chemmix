@@ -1,10 +1,11 @@
 import numpy as np
 import pylab as plt
 from matplotlib.ticker import NullFormatter
-
-from karlsson import *
-
+import h5py
 from optparse import OptionParser
+
+import karlsson
+from tophat import TopHat
 
 def plot_2d_hist(xdat,ydat,
                  nxbins=50,nybins=50,
@@ -66,20 +67,26 @@ def plot_2d_hist(xdat,ydat,
 
 
 if __name__=="__main__":
-    #tmin = 0.0; tmax = 1000.0; dt = 0.03
-    tmin = 0.0; tmax = 1000.0; dt = 0.03
-    plotprefix = 'dt0.03'
-    plotprefix = 'dt0.03_Cenhanced_p0.75'
-    #plotprefix = 'dt0.03_Cenhanced_p0.5'
-    #plotprefix = 'dt0.03_Cenhanced_p0.25'
-    Nstars = 10**5
-    print "tmax,dt:",tmax,dt
-    print "Nstars:",Nstars
-    fileprefix="Mmixgrid_K08_tmax"+str(tmax)+"_dt"+str(dt)
-    #chemarr = np.load(fileprefix+'_chemgrid_N06_N'+str(Nstars)+'.npy')
-    chemarr = np.load(fileprefix+'_chemgrid_N06_Cenhanced_p0.75_N'+str(Nstars)+'.npy')
-    #chemarr = np.load(fileprefix+'_chemgrid_N06_Cenhanced_p0.5_N'+str(Nstars)+'.npy')
-    #chemarr = np.load(fileprefix+'_chemgrid_N06_Cenhanced_p0.25_N'+str(Nstars)+'.npy')
+### PICK ONE!
+#    filename = 'CHEMGRIDS/minihalo_chemgrid_N06i.hdf5'
+#    plotprefix = 'minihalo_N06i'
+#    Mhalo,vturb,lturb,nSN,trecovery = karlsson.params_minihalo()
+    filename = 'CHEMGRIDS/atomiccoolinghalo_chemgrid_N06i.hdf5'
+    plotprefix = 'atomiccoolinghalo_N06i'
+    Mhalo,vturb,lturb,nSN,trecovery = karlsson.params_atomiccoolinghalo()
+
+    vturb *= 3.16/3.08 * .001 #km/s to kpc/yr
+    Dt =  vturb * lturb / 3.0 #kpc^2/Myr
+    uSN = nSN/(trecovery * (4*np.pi/3.) * (10*lturb)**3) #SN/Myr/kpc^3
+    print filename
+    print "Mhalo",Mhalo,"vturb",vturb,"lturb",lturb
+    print "Dt",Dt,"uSN",uSN
+    th = TopHat(Mhalo=Mhalo,nvir=0.1,fb=0.1551,mu=1.4)
+    RHO = th.get_rho_of_t_fn()
+    VMIX = karlsson.get_Vmixfn_K08(RHO,Dt=Dt)
+    WISM = karlsson.wISM_K05
+    PSI = lambda t: uSN
+    MUFN = karlsson.get_mufn(VMIX,PSI)
 
     parser = OptionParser()
     parser.add_option('-k','--kmax',
@@ -92,22 +99,21 @@ if __name__=="__main__":
                       help='Call plt.show() in addition to saving all the figures')
     options,args = parser.parse_args()
 
+
+    f = h5py.File(filename,'r')
+    chemarr = np.array(f['chemgrid'])
+    f.close()
+
     kmax = options.kmax
-    print "KMAX:",kmax
+    print "kmax to plot:",kmax
     Nstar,numyields,kmax_tmp = chemarr.shape
     assert kmax<=kmax_tmp
     chemarr = chemarr[:,:,0:kmax]
     
-    aLMS = 0.835
-    #mufn = get_mufn_K05A()
-    #psi_K05 = uSN_K05A
-    #ck = calc_ck(kmax,wISM_K05,mufn,psi_K05)
-    mufn = get_mufn_K05A()
-    psi_K05 = uSN_K05A
     import warnings
     with warnings.catch_warnings():
         warnings.simplefilter('ignore') #ck gives a convergence warning which isn't important
-        ck = calc_ck(kmax,wISM_K05,mufn,psi_K05)
+        ck = karlsson.calc_ck(kmax,WISM,MUFN,PSI)
 
     for k in range(kmax):
         chemarr[:,:,k] *= ck[k]
@@ -137,22 +143,22 @@ if __name__=="__main__":
         plt.xticks([-6,-5,-4,-3,-2,-1,0])
         plt.xlabel('['+elemnames[i]+'/H]')
         plt.yticks([0,1,2,3,4]); plt.ylim((0,4))
-    plt.savefig(plotprefix+'_k'+str(kmax)+'_nomoto06_K05_sixelem.png',bbox_inches='tight')
+    plt.savefig(plotprefix+'_k'+str(kmax)+'_sixelem.png',bbox_inches='tight')
 
     plot_2d_hist(chemarr[:,5],chemarr[:,0]-chemarr[:,5],
                  nxbins=100,nybins=100,
                  xlabel='[Fe/H]',ylabel='[C/Fe]')
-    plt.savefig(plotprefix+'_k'+str(kmax)+'_nomoto06_K05_CFe-FeH.png',bbox_inches='tight')
+    plt.savefig(plotprefix+'_k'+str(kmax)+'_CFe-FeH.png',bbox_inches='tight')
 
-    plot_2d_hist(chemarr[:,5],chemarr[:,2]-chemarr[:,5],
-                 nxbins=100,nybins=100,
-                 xlabel='[Fe/H]',ylabel='[Mg/Fe]')
-    plt.savefig(plotprefix+'_k'+str(kmax)+'_nomoto06_K05_MgFe-FeH.png',bbox_inches='tight')
-
-    plot_2d_hist(chemarr[:,5],chemarr[:,3],
-                 nxbins=100,nybins=100,
-                 xlabel='[Fe/H]',ylabel='[Si/H]')
-    plt.savefig(plotprefix+'_k'+str(kmax)+'_nomoto06_K05_SiH-FeH.png',bbox_inches='tight')
-
+#    plot_2d_hist(chemarr[:,5],chemarr[:,2]-chemarr[:,5],
+#                 nxbins=100,nybins=100,
+#                 xlabel='[Fe/H]',ylabel='[Mg/Fe]')
+#    plt.savefig(plotprefix+'_k'+str(kmax)+'_nomoto06_K05_MgFe-FeH.png',bbox_inches='tight')
+#
+#    plot_2d_hist(chemarr[:,5],chemarr[:,3],
+#                 nxbins=100,nybins=100,
+#                 xlabel='[Fe/H]',ylabel='[Si/H]')
+#    plt.savefig(plotprefix+'_k'+str(kmax)+'_nomoto06_K05_SiH-FeH.png',bbox_inches='tight')
+#
     if options.showplots:
         plt.show()

@@ -27,7 +27,6 @@ def run_compute_fMk(filename,logMmin,logMmax,logdM,Mhalo,vturb,lturb,nSN,trecove
     VMIX = karlsson.get_Vmixfn_K08(RHO,Dt=Dt)
     MMIXGRID_FILENAME = karlsson.get_mmixgrid_filename(filename)
 
-    VMIX = karlsson.get_Vmixfn_K08(RHO,Dt=Dt)
     WISM = karlsson.wISM_K05
     PSI = lambda t: uSN
     #PSI = karlsson.uSN_G08_const

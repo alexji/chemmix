@@ -1,26 +1,31 @@
 import numpy as np
-import karlsson
+import h5py
 
 import time
 from multiprocessing import Pool
 import functools
 import numpy.random as random
 
-from yields import interp_nomoto06_yields
+import karlsson
+import yields
 
-def relative_imf(marr,alpha):
+def relative_imf(marr,alpha,norm=False):
     Mmax = float(marr[-1])
-    return np.array([(M/Mmax)**(-alpha) for M in marr])
+    imfpdf = np.array([(M/Mmax)**(-alpha) for M in marr])
+    if norm:
+        imfpdf = imfpdf/np.sum(imfpdf)
+    return imfpdf
 
-def run_one_star(j,k,Mplot,fMk,sntypearr,imfpdf,yieldfn,masstonum,gaussianprofile=False,carbonenhanceprob=0.0,carbonenhancefactor=100.):
+def run_one_star(j,k,Mplot,fMk,sntypearr,sntypepdf,yieldobj,masstonum,gaussianprofile=False):
+                 #,carbonenhanceprob=0.0,carbonenhancefactor=100.):
     # draw k mixing masses, SN types
     mixing_masses = karlsson.draw_from_distr(k,Mplot,fMk)
-    sn_types = karlsson.draw_from_distr(k,sntypearr,imfpdf)
+    sn_types = karlsson.draw_from_distr(k,sntypearr,sntypepdf)
     # get the k * numyields element production array
-    yields = np.array([yieldfn(sn_type) for sn_type in sn_types])
+    yields = yieldobj(sn_types) #np.array([yieldobj(sn_type) for sn_type in sn_types])
     # with a certain probability, add carbon enhancement
-    if carbonenhanceprob > 0:
-        yields[random.rand(k) < carbonenhanceprob, 0] *= carbonenhancefactor
+    #if carbonenhanceprob > 0:
+    #    yields[random.rand(k) < carbonenhanceprob, 0] *= carbonenhancefactor
     # weighted sum to get 1 * numyields, which goes into output
     if gaussianprofile:
         pass #TODO!!!
@@ -28,49 +33,49 @@ def run_one_star(j,k,Mplot,fMk,sntypearr,imfpdf,yieldfn,masstonum,gaussianprofil
         weightedyields = masstonum*np.sum((yields.transpose()/mixing_masses),1).transpose()
     return weightedyields
 
-def compute_random_sn_yields(FILENAME,kmax,Mbins,XH=0.75,Nstars=10**5,numprocs=1):
-    pass
-
-if __name__=="__main__":
-    #tmin = 0.0; tmax = 1000.0; dt = 0.1
-    tmin = 0.0; tmax = 1000.0; dt = 0.03
-    FILENAME="Mmixgrid_K08_tmax"+str(tmax)+"_dt"+str(dt)
-    Nstars = 10**5
-    numyields = 6
-    kmin = 1
-    kmax = 10
-    XH = 0.75
-    numprocs=20
-    Mbins = 10**np.arange(2,8.01,.01)
-    Mplot = 10**(np.arange(2,8.0,.01)+.005)
-    elemmass = np.array([12.0,16.0,24.3,28.1,40.1,55.8]) #mZ/mH
-    masstonum = 1.0/(elemmass * XH)
-
-    output = np.zeros((Nstars,numyields,kmax))
+def run_compute_random_sn(filename,sntypepdf,yieldobj,kmax,
+                          headernotes='',
+                          XH=0.75,Nstars=10**5,numprocs=10):
+    Mplot = np.load(karlsson.get_Mplot_filename(filename))
+    masstonum = 1.0/(yieldobj.elemmass * XH)
+    output = np.zeros((Nstars,yieldobj.numyields,kmax))
+    sntypearr = np.arange(1,yieldobj.numtypes+1)
 
     pool = Pool(numprocs)
-
-    imfarr = np.arange(13,41)
-    imfpdf = relative_imf(imfarr,2.35)
-    imfpdf = imfpdf/np.sum(imfpdf)
-    sntypearr = np.arange(1,28+1)
-    
-    #for k in xrange(kmin,kmax+1):
-    #    print "Starting type",k
-    #    start = time.time()
-    #    fMk = np.load(FILENAME+'_fM'+str(k)+'.npy')
-    #    starmaker = functools.partial(run_one_star,k=k,Mplot=Mplot,fMk=fMk,sntypearr=sntypearr,imfpdf=imfpdf,yieldfn=interp_nomoto06_yields,masstonum=masstonum)
-    #    this_output = pool.map(starmaker,xrange(Nstars))
-    #    output[:,:,k-1] = np.array(this_output)
-    #    print "  time:",time.time()-start
-    #np.save(FILENAME+"_chemgrid_N06_N"+str(Nstars),output)
-    
-    for k in xrange(kmin,kmax+1):
-        print "Starting type",k
+    print "Using",numprocs,"processors to run",filename,"with N =",Nstars
+    for k in xrange(1,kmax+1):
+        print "Starting k =",k
         start = time.time()
-        fMk = np.load(FILENAME+'_fM'+str(k)+'.npy')
-        starmaker = functools.partial(run_one_star,k=k,Mplot=Mplot,fMk=fMk,sntypearr=sntypearr,imfpdf=imfpdf,yieldfn=interp_nomoto06_yields,masstonum=masstonum,carbonenhanceprob=0.001)
+        fMk = np.load(karlsson.get_fMk_filename(filename,k))
+        starmaker = functools.partial(run_one_star,k=k,Mplot=Mplot,fMk=fMk,
+                                      sntypearr=sntypearr,sntypepdf=sntypepdf,
+                                      yieldobj=yieldobj,masstonum=masstonum)
         this_output = pool.map(starmaker,xrange(Nstars))
         output[:,:,k-1] = np.array(this_output)
         print "  time:",time.time()-start
-    np.save(FILENAME+"_chemgrid_N06_Cenhanced_p0.001_N"+str(Nstars),output)
+    pool.close()#; pool.join()
+
+    postfix = '_'+yieldobj.shortname
+    outfile = karlsson.get_chemgrid_filename(filename,postfix=postfix)
+    print "Finished! Saving file to",outfile
+    f = h5py.File(outfile,"w")
+    f['chemgrid']=output
+    f.attrs['yields'] = yieldobj.name
+    f.attrs['Nstars'] = Nstars
+    f.attrs['XH'] = XH
+    f.attrs['kmax'] = kmax
+    f.attrs['notes'] = headernotes
+    f.close()
+    #np.save(outfile,output)
+    #np.save(FILENAME+"_chemgrid_N06_Cenhanced_p0.1_N"+str(Nstars),output)
+
+if __name__=="__main__":
+    n06y = yields.nomoto06interpyields()
+    sntypepdf = relative_imf(n06y.massarr,2.35,norm=True) #salpeter imf
+    #run_compute_random_sn('minihalo',sntypepdf,n06y,10,
+    #                      headernotes='salpeter imf',
+    #                      Nstars=10**6,numprocs=20)
+
+    run_compute_random_sn('atomiccoolinghalo',sntypepdf,n06y,15,
+                          headernotes='salpeter imf',
+                          Nstars=10**6,numprocs=20)
