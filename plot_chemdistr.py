@@ -5,7 +5,6 @@ import h5py
 from optparse import OptionParser
 
 import karlsson
-from tophat import TopHat
 
 def plot_2d_hist(xdat,ydat,
                  nxbins=50,nybins=50,
@@ -70,35 +69,22 @@ if __name__=="__main__":
 ### PICK ONE!
 #    filename = 'CHEMGRIDS/minihalo_chemgrid_N06i.hdf5'
 #    plotprefix = 'minihalo_N06i'
-#    Mhalo,vturb,lturb,nSN,trecovery = karlsson.params_minihalo()
+#    paramfn = karlsson.params_minihalo
 #    filename = 'CHEMGRIDS/atomiccoolinghalo_chemgrid_N06i.hdf5'
 #    plotprefix = 'atomiccoolinghalo_N06i'
-#    Mhalo,vturb,lturb,nSN,trecovery = karlsson.params_atomiccoolinghalo()
+#    paramfn = karlsson.params_atomiccoolinghalo
 #    filename = 'CHEMGRIDS/minihalo_chemgrid_N06ip0.100f100.0.hdf5'
 #    plotprefix = 'minihalo_N06ip0.100f100.0'
-#    Mhalo,vturb,lturb,nSN,trecovery = karlsson.params_minihalo()
+#    paramfn = karlsson.params_minihalo
 #    filename = 'CHEMGRIDS/atomiccoolinghalo_chemgrid_N06ip0.100f100.0.hdf5'
 #    plotprefix = 'atomiccoolinghalo_N06ip0.100f100.0'
-#    Mhalo,vturb,lturb,nSN,trecovery = karlsson.params_atomiccoolinghalo()
+#    paramfn = karlsson.params_atomiccoolinghalo
     filename = 'CHEMGRIDS/minihalo_chemgrid_HW10E1.2S4m0.hdf5'
     plotprefix = 'minihalo_HW10E1.2S4m0'
-    Mhalo,vturb,lturb,nSN,trecovery = karlsson.params_minihalo()
+    paramfn = karlsson.params_minihalo
 #    filename = 'CHEMGRIDS/atomiccoolinghalo_chemgrid_HW10E1.2S4m0.hdf5'
 #    plotprefix = 'atomiccoolinghalo_HW10E1.2S4m0'
-#    Mhalo,vturb,lturb,nSN,trecovery = karlsson.params_atomiccoolinghalo()
-
-    vturb *= 3.16/3.08 * .001 #km/s to kpc/yr
-    Dt =  vturb * lturb / 3.0 #kpc^2/Myr
-    uSN = nSN/(trecovery * (4*np.pi/3.) * (10*lturb)**3) #SN/Myr/kpc^3
-    print filename
-    print "Mhalo",Mhalo,"vturb",vturb,"lturb",lturb
-    print "Dt",Dt,"uSN",uSN
-    th = TopHat(Mhalo=Mhalo,nvir=0.1,fb=0.1551,mu=1.4)
-    RHO = th.get_rho_of_t_fn()
-    VMIX = karlsson.get_Vmixfn_K08(RHO,Dt=Dt)
-    WISM = karlsson.wISM_K05
-    PSI = lambda t: uSN
-    MUFN = karlsson.get_mufn(VMIX,PSI)
+#    paramfn = karlsson.params_atomiccoolinghalo
 
     parser = OptionParser()
     parser.add_option('-k','--kmax',
@@ -111,25 +97,15 @@ if __name__=="__main__":
                       help='Call plt.show() in addition to saving all the figures')
     options,args = parser.parse_args()
 
-
+    print filename
     f = h5py.File(filename,'r')
     chemarr = np.array(f['chemgrid'])
     f.close()
 
     kmax = options.kmax
     print "kmax to plot:",kmax
-    Nstar,numyields,kmax_tmp = chemarr.shape
-    assert kmax<=kmax_tmp
-    chemarr = chemarr[:,:,0:kmax]
-    
-    import warnings
-    with warnings.catch_warnings():
-        warnings.simplefilter('ignore') #ck gives a convergence warning which isn't important
-        ck = karlsson.calc_ck(kmax,WISM,MUFN,PSI)
-
-    for k in range(kmax):
-        chemarr[:,:,k] *= ck[k]
-    chemarr = np.log10(np.sum(chemarr,2))
+    chemarr,ck = karlsson.weight_chemgrid(kmax,chemarr,paramfn)
+    Nstar,numyields = chemarr.shape
     
     elemnames = ['C', 'O', 'Mg', 'Si', 'Ca', 'Fe']
     asplund09solar = np.array([8.43,8.69,7.60,7.51,6.34,7.50]) - 12 #log10(Z/H) solar

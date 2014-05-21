@@ -9,7 +9,7 @@ def get_hw10_label(E,cut,mix):
     return "E"+str(E)+" "+cut+" mix"+str(mix)
 
 def get_hw10_filename(E,cut,mix,name='sixelem'):
-    assert E in [0.3,0.6,0.9,1.2,1.5,1.8,2.1,2.4,3,5,10]
+    assert E in [0.3,0.6,0.9,1.2,1.5,1.8,2.4,3,5,10]
     assert cut in ['S4','Ye']
     assert mix in [0,.001,.00158,.00251]
     return "YIELDDATA/HW10_"+name+"_E"+str(E)+"_C"+cut+"_mix"+str(mix)+".npy"
@@ -73,7 +73,7 @@ def plot_hw10_sixelem(E,cut,mix,ratio=False,**kwargs):
     return tab
 
 if __name__=="__main__":
-    ratioflag = True
+    ratioflag = False
 
     plt.figure()
     nomoto = np.load("YIELDDATA/interp_nomoto06_z0.npy")
@@ -96,8 +96,10 @@ if __name__=="__main__":
     plot_hw10_sixelem(1.2,'S4',.00251,ratio=ratioflag,color='green', ls='dashed',lw=2)
     plot_hw10_sixelem(1.5,'S4',0,     ratio=ratioflag,color='red',   label='E1.5')
     plot_hw10_sixelem(1.5,'S4',.00251,ratio=ratioflag,color='red',   ls='dashed',lw=2)
-    plot_hw10_sixelem(3.0,'S4',0,     ratio=ratioflag,color='cyan',  label='E3.0')
-    plot_hw10_sixelem(3.0,'S4',.00251,ratio=ratioflag,color='cyan',  ls='dashed',lw=2)
+    plot_hw10_sixelem(1.8,'S4',0,     ratio=ratioflag,color='cyan',  label='E1.8')
+    plot_hw10_sixelem(1.8,'S4',.00251,ratio=ratioflag,color='cyan',  ls='dashed',lw=2)
+    plot_hw10_sixelem(2.4,'S4',0,     ratio=ratioflag,color='yellow',label='E2.4')
+    plot_hw10_sixelem(2.4,'S4',.00251,ratio=ratioflag,color='yellow',ls='dashed',lw=2)
     plot_hw10_sixelem(10, 'S4',0,     ratio=ratioflag,color='purple',label='E10')
     plot_hw10_sixelem(10, 'S4',.00251,ratio=ratioflag,color='purple',ls='dashed',lw=2)
     

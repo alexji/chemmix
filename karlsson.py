@@ -4,10 +4,12 @@ from scipy.integrate import quad,trapz
 from scipy.interpolate import interp1d
 
 import numpy.random as random
+from tophat import TopHat
 
 import time
 from multiprocessing import Pool
 import functools
+import warnings
 
 def MbinsMplot(Mmin,Mmax,dM):
     Mbins = np.arange(Mmin,Mmax+dM,dM)
@@ -211,6 +213,32 @@ def calc_fMk(k,Mbins,DMlist,Vmix,wISM,mufn,SFR,normalize=True):
         fMk = fMk/np.sum(fMk)
     return fMk
 
+def weight_chemgrid(kmax,chemgrid_in,paramfn):
+    Nstar,numyields,kmax_tmp = chemgrid_in.shape
+    assert kmax<=kmax_tmp
+    chemarr = chemgrid_in[:,:,0:kmax]
+    
+    Mhalo,vturb,lturb,nSN,trecovery = paramfn()
+    vturb *= 3.16/3.08 * .001 #km/s to kpc/yr
+    Dt =  vturb * lturb / 3.0 #kpc^2/Myr
+    uSN = nSN/(trecovery * (4*np.pi/3.) * (10*lturb)**3) #SN/Myr/kpc^3
+    print "Mhalo",Mhalo,"vturb",vturb,"lturb",lturb
+    print "Dt",Dt,"uSN",uSN
+    th = TopHat(Mhalo=Mhalo,nvir=0.1,fb=0.1551,mu=1.4)
+    RHO = th.get_rho_of_t_fn()
+    VMIX = get_Vmixfn_K08(RHO,Dt=Dt)
+    WISM = wISM_K05
+    PSI = lambda t: uSN
+    MUFN = get_mufn(VMIX,PSI)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore') #ck gives a convergence warning which isn't important
+        ck = calc_ck(kmax,WISM,MUFN,PSI)
+    for k in range(kmax):
+        chemarr[:,:,k] *= ck[k]
+    chemarr = np.log10(np.sum(chemarr,2))
+    return chemarr,ck
+
 def draw_from_distr(N,x,pdf,seed=None,eps=10**-10):
     if seed!=None:
         random.seed(seed)
@@ -224,45 +252,3 @@ def calc_ck(kmax,wISM,mufn,SFR,tmin=0,tmax=1000):
     """ normalized array of weights of how many SN enrich a star """
     myarr =  [quad(lambda t: wISM(k,mufn(t))*SFR(t),tmin,tmax)[0] for k in range(1,kmax+1)]
     return np.array(myarr)/np.sum(myarr)
-
-if __name__=="__main__":
-    aLMS = 0.835
-    aSN  = 0.002
-
-    NUMPROCS = 20
-    PLOT = True
-    COMPUTE_MMIXGRID=False
-    tmin = 0; tmax = 1000; dt = .1
-    Nres = str(int((tmax-tmin)/float(dt)))
-    if PLOT:
-        import pylab as plt
-        plt.rc('image',origin='lower')
-    filename = "Mmixgrid_"+Nres+"_dt"+str(dt)
-    if COMPUTE_MMIXGRID:
-        start = time.time()
-        tarr,tauarr,Mmixgrid = calc_Mmix_grid(Vmixdot_K05,rho_K05A,tmin=tmin,tmax=tmax,dt=dt,numprocs=NUMPROCS)
-        np.savez(filename,tarr=tarr,tauarr=tauarr,Mmixgrid=Mmixgrid)
-        print "calc_Mmixgrid time:",time.time()-start
-    saved_files = np.load(filename+".npz")
-    tarr = saved_files['tarr']; tauarr = saved_files['tauarr']
-    Mmixgrid = saved_files['Mmixgrid']
-    if PLOT:
-        plt.imshow(np.log10(Mmixgrid.transpose()), #transpose to make [i,j] -> [x,y]
-                   extent=[min(tarr),max(tarr),min(tauarr),max(tauarr)])
-        plt.colorbar()
-        plt.show()
-    
-    Mbins = np.linspace(0,2,201)*10**6
-    Mplot = (Mbins[:-1]+Mbins[1:])/2.0
-    start = time.time()
-    DMlist = get_DMlist(Mbins,tarr,tauarr,Mmixgrid,numprocs=NUMPROCS)
-    print "get_DMlist time:",time.time()-start
-
-    mufn = get_mufn_K05A()
-    psi_K05 = lambda t: uSN_K05A(t)/aLMS
-
-    if PLOT:
-        Mmixlist = np.reshape(Mmixgrid[np.where(Mmixgrid > 0)],(-1))
-        plt.hist(Mmixlist,bins=Mbins)
-        plt.savefig('test-karlsson-hist.png',bbox_inches='tight')
-        plt.clf()
