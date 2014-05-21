@@ -104,14 +104,14 @@ if __name__=="__main__":
 
     kmax = options.kmax
     print "kmax to plot:",kmax
-    chemarr,ck = karlsson.weight_chemgrid(kmax,chemarr,paramfn)
-    Nstar,numyields = chemarr.shape
-    
     elemnames = ['C', 'O', 'Mg', 'Si', 'Ca', 'Fe']
-    asplund09solar = np.array([8.43,8.69,7.60,7.51,6.34,7.50]) - 12 #log10(Z/H) solar
-    for z in range(numyields):
-        chemarr[:,z] -= asplund09solar[z]
-        print elemnames[z],np.min(chemarr[:,z]),np.max(chemarr[:,z])
+    chemarr,ck = karlsson.weight_chemgrid(kmax,chemarr,paramfn,
+                                          elemnames=elemnames,verbose=True)
+    #Nstar,numyields = chemarr.shape
+    #asplund09solar = np.array([8.43,8.69,7.60,7.51,6.34,7.50]) - 12 #log10(Z/H) solar
+    #for z in range(numyields):
+    #    chemarr[:,z] -= asplund09solar[z]
+    #    print elemnames[z],np.min(chemarr[:,z]),np.max(chemarr[:,z])
     
     ## BEGIN PLOTS
     plt.figure()

@@ -2,9 +2,10 @@ import numpy as np
 from math import factorial
 from scipy.integrate import quad,trapz
 from scipy.interpolate import interp1d
-
 import numpy.random as random
+
 from tophat import TopHat
+import yields
 
 import time
 from multiprocessing import Pool
@@ -213,7 +214,8 @@ def calc_fMk(k,Mbins,DMlist,Vmix,wISM,mufn,SFR,normalize=True):
         fMk = fMk/np.sum(fMk)
     return fMk
 
-def weight_chemgrid(kmax,chemgrid_in,paramfn):
+def weight_chemgrid(kmax,chemgrid_in,paramfn,
+                    elemnames=None,verbose=False):
     Nstar,numyields,kmax_tmp = chemgrid_in.shape
     assert kmax<=kmax_tmp
     chemarr = chemgrid_in[:,:,0:kmax]
@@ -222,8 +224,8 @@ def weight_chemgrid(kmax,chemgrid_in,paramfn):
     vturb *= 3.16/3.08 * .001 #km/s to kpc/yr
     Dt =  vturb * lturb / 3.0 #kpc^2/Myr
     uSN = nSN/(trecovery * (4*np.pi/3.) * (10*lturb)**3) #SN/Myr/kpc^3
-    print "Mhalo",Mhalo,"vturb",vturb,"lturb",lturb
-    print "Dt",Dt,"uSN",uSN
+    print "Mhalo %.1e vturb %.2e lturb %f" % (Mhalo,vturb,lturb)
+    print "Dt %.2e uSN %.2e" % (Dt,uSN)
     th = TopHat(Mhalo=Mhalo,nvir=0.1,fb=0.1551,mu=1.4)
     RHO = th.get_rho_of_t_fn()
     VMIX = get_Vmixfn_K08(RHO,Dt=Dt)
@@ -237,6 +239,13 @@ def weight_chemgrid(kmax,chemgrid_in,paramfn):
     for k in range(kmax):
         chemarr[:,:,k] *= ck[k]
     chemarr = np.log10(np.sum(chemarr,2))
+    if elemnames != None:
+        asplund09ZHsun = yields.map_elemnames_to_asplund09(elemnames)
+        for z in range(len(elemnames)):
+            chemarr[:,z] -= asplund09ZHsun[z]
+            if verbose: 
+                print "%s: min %3.2f max %3.2f" % (elemnames[z],np.min(chemarr[:,z]),np.max(chemarr[:,z]))
+
     return chemarr,ck
 
 def draw_from_distr(N,x,pdf,seed=None,eps=10**-10):

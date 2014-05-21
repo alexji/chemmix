@@ -10,6 +10,18 @@ import os
 
 import hw10
 
+def map_elemnames_to_elemmass(elemnames):
+    elemmap = {'C': 12.0, 'O': 16.0,
+               'Mg': 24.3, 'Si': 28.1,
+               'Ca': 40.1, 'Fe': 55.8}
+    return np.array([elemmap[elem] for elem in elemnames])
+def map_elemnames_to_asplund09(elemnames):
+    """ Solar log10(nZ/nH) """
+    elemmap = {'C': 8.43, 'O': 8.69,
+               'Mg': 7.60, 'Si': 7.51,
+               'Ca': 6.34, 'Fe': 7.50}
+    return np.array([elemmap[elem]-12.0 for elem in elemnames])
+
 class yieldsbase(object):
     """ Base functions for yield classes """
     def clean_sn_type_input(self,sn_type):
@@ -29,17 +41,6 @@ class yieldsbase(object):
         return self.get_yields(sn_type)
     def __repr__(self):
         return self.name
-    def map_elemnames_to_elemmass(self,elemnames):
-        elemmap = {'C': 12.0, 'O': 16.0,
-                   'Mg': 24.3, 'Si': 28.1,
-                   'Ca': 40.1, 'Fe': 55.8}
-        return np.array([elemmap[elem] for elem in elemnames])
-    def map_elemnames_to_asplund09(self,elemnames):
-        """ Solar log10(nZ/nH) """
-        elemmap = {'C': 8.43, 'O': 8.69,
-                   'Mg': 7.60, 'Si': 7.51,
-                   'Ca': 6.34, 'Fe': 7.50}
-        return np.array([elemmap[elem]-12.0 for elem in elemnames])
 
 class nomoto06yields(yieldsbase):
     def __init__(self):
@@ -47,7 +48,7 @@ class nomoto06yields(yieldsbase):
         self.shortname = "N06"
         self.numyields = 6
         self.elemnames = ['C','O','Mg','Si','Ca','Fe']
-        self.elemmass = self.map_elemnames_to_elemmass(self.elemnames)
+        self.elemmass = map_elemnames_to_elemmass(self.elemnames)
         self.numtypes  = 7
         self.massarr = np.array([13.,15,18,20,25,30,40])
     def yieldfn(self,sn_type):
@@ -73,7 +74,7 @@ class nomoto06interpyields(yieldsbase):
         self.shortname = "N06i"
         self.numyields = 6
         self.elemnames = ['C','O','Mg','Si','Ca','Fe']
-        self.elemmass = self.map_elemnames_to_elemmass(self.elemnames)
+        self.elemmass = map_elemnames_to_elemmass(self.elemnames)
         self.numtypes  = 28 #M = 13 to 40 Msun, inclusive
         self.massarr = np.arange(13.,40+1)
 
@@ -138,7 +139,7 @@ class hw10yields(yieldsbase):
         self.shortname = "HW10E"+str(E)+self.cut+"m"+str(mix)
         self.numyields = 6
         self.elemnames = ['C','O','Mg','Si','Ca','Fe']
-        self.elemmass = self.map_elemnames_to_elemmass(self.elemnames)
+        self.elemmass = map_elemnames_to_elemmass(self.elemnames)
         self.numtypes  = 31
         self.massarr = np.arange(10,41)
         self.yieldarr = hw10.load_hw10(E,cut,mix)
@@ -171,7 +172,7 @@ def plot_yield_ratios(yieldobj,Fe_ix,subplota,subplotb):
     sntypearr = np.arange(1,yieldobj.numtypes+1)
     yieldarr = yieldobj(sntypearr)
     
-    asplund09fe = yieldobj.map_elemnames_to_asplund09(yieldobj.elemnames) +12-7.50
+    asplund09fe = map_elemnames_to_asplund09(yieldobj.elemnames) +12-7.50
     metal_num = yieldarr/yieldobj.elemmass
     metal_num = (metal_num.transpose()/metal_num[:,5]).transpose()
     yieldarr = np.log10(metal_num) - asplund09fe
