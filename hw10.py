@@ -12,16 +12,15 @@ def get_hw10_filename(E,cut,mix,name='sixelem'):
     assert E in [0.3,0.6,0.9,1.2,1.5,1.8,2.1,2.4,3,5,10]
     assert cut in ['S4','Ye']
     assert mix in [0,.001,.00158,.00251]
-    return "DATA/HW10_"+name+"_E"+str(E)+"_C"+cut+"_mix"+str(mix)+".npy"
+    return "YIELDDATA/HW10_"+name+"_E"+str(E)+"_C"+cut+"_mix"+str(mix)+".npy"
 
-def load_hw10(E,cut,mix,name='sixelem'):
+def load_hw10(E,cut,mix,name='sixelem',verbose=False):
     filename = get_hw10_filename(E,cut,mix,name=name)
     if os.path.exists(filename):
-        print "Loading "+filename
+        if verbose: print "Loading "+filename
         return np.load(filename)
     elif name=='sixelem':
         print "Reducing full table "+filename+" (may take a while and/or overflow memory)..."
-        print 
         process_hw10_table_sixelem(E,cut,mix)
         gc.collect() #garbage collect large data
         return np.load(filename)
@@ -30,7 +29,7 @@ def load_hw10(E,cut,mix,name='sixelem'):
 
 def process_hw10_table_sixelem(E,cut,mix):
     filename=get_hw10_filename(E,cut,mix,name='sixelem')
-    tab = asciitable.read("DATA/hegerwoosley10.dat")
+    tab = asciitable.read("YIELDDATA/hegerwoosley10.dat")
     #tab.dtype.names = 'Mass','Energy','Cut','Mixing','Isotope','Yield'
     elemnames = ['C','O','Mg','Si','Ca','Fe']
     elemarr = [re.compile(elem+r'[0-9]+\Z') for elem in elemnames]
@@ -74,10 +73,10 @@ def plot_hw10_sixelem(E,cut,mix,ratio=False,**kwargs):
     return tab
 
 if __name__=="__main__":
-    ratioflag = False
+    ratioflag = True
 
     plt.figure()
-    nomoto = np.load("DATA/interp_nomoto06_z0.npy")
+    nomoto = np.load("YIELDDATA/interp_nomoto06_z0.npy")
     if ratioflag:
         molecmass = np.array([12.,16.,24.3,28.1,40.1,55.8])
         asplund09 = np.array([8.43,8.69,7.60,7.51,6.34,7.50])
@@ -117,4 +116,5 @@ if __name__=="__main__":
         for i in range(6):
             plt.subplot(3,2,i+1)
             #plt.ylim((-1,1.5))
+    plt.tight_layout()
     plt.show()

@@ -5,7 +5,10 @@
 ###  should return the number of SN types
 
 import numpy as np
+import pylab as plt
 import os
+
+import hw10
 
 class yieldsbase(object):
     """ Base functions for yield classes """
@@ -109,7 +112,7 @@ class nomoto06interpyields(yieldsbase):
         #plt.savefig("PLOTS/interp_nomoto06_z0.png")
 
 class nomoto06interpyields_Cenhance(nomoto06interpyields):
-    def __init__(self,p=0.1,f=100.,
+    def __init__(self,p,f,
                  datafile="YIELDDATA/interp_nomoto06_z0.npy",autointerpolate=True):
         super(nomoto06interpyields_Cenhance,self).__init__(datafile=datafile,autointerpolate=autointerpolate)
         self.p = p; self.f = float(f)
@@ -124,46 +127,71 @@ class nomoto06interpyields_Cenhance(nomoto06interpyields):
     def modify_sntypepdf(self,sntypepdf):
         sntypepdf /= np.sum(sntypepdf) #normalize
         newpdf = np.concatenate([self.p*sntypepdf,(1-self.p)*sntypepdf])
-        print newpdf,newpdf.shape,np.sum(newpdf)
         assert np.abs(np.sum(newpdf) - 1.0) < 3*np.finfo(float).eps
         return newpdf
 
-#def _simple_yields(sn_type):
-#    if sn_type==1:
-#        return [0.5,0.6]
-#    if sn_type==2:
-#        return [0.3,0.9]
-#    raise ValueError("sn_type invalid")
-#def simple_yields(sn_type):
-#    if return_yield_length(sn_type):
-#        return 2
-#    if return_num_sn_types(sn_type):
-#        return 2
-#    try:
-#        yields = []
-#        for this_sn_type in sn_type:
-#            yields.append(_simple_yields(this_sn_type))
-#        yields = np.array(yields)
-#        return yields
-#    except TypeError:
-#        yields = np.array(_testyield(sn_type))
-#        return np.reshape(np.array(yields),(1,-1))
-#
-#
-#def interp_nomoto06_yields(sn_type):
-#    """
-#    sn_type 1 to 28 <=> mass from 13 to 40 Msun in integer increments
-#    """
-#    if return_yield_length(sn_type):
-#        return 6
-#    if return_num_sn_types(sn_type):
-#        return 28
-#    indices = np.array(sn_type)-1
-#    #enforce sn_type:
-#    assert np.all(np.logical_and(indices >= 0, indices <= 27))
-#    yields = np.load("DATA/interp_nomoto06_z0.npy")
-#    return yields[indices,:]
-#
+class hw10yields(yieldsbase):
+    def __init__(self,E,cut,mix):
+        self.datafile = hw10.get_hw10_filename(E,cut,mix)
+        self.E = E; self.cut = cut; self.mix = mix
+        self.name = "HW10 Yields "+hw10.get_hw10_label(E,cut,mix)
+        self.shortname = "HW10E"+str(E)+self.cut+"m"+str(mix)
+        self.numyields = 6
+        self.elemnames = ['C','O','Mg','Si','Ca','Fe']
+        self.elemmass = self.map_elemnames_to_elemmass(self.elemnames)
+        self.numtypes  = 31
+        self.massarr = np.arange(10,41)
+        self.yieldarr = hw10.load_hw10(E,cut,mix)
+        
+    def get_yields(self,sn_type):
+        sn_type = self.clean_sn_type_input(sn_type).reshape(-1)
+        indices = np.array(sn_type)-1
+        return self.yieldarr[indices,:]
+
+def plot_yields(yieldobj,subplota,subplotb):
+    sntypearr = np.arange(1,yieldobj.numtypes+1)
+    yieldarr = yieldobj(sntypearr)
+    if yieldobj.numtypes == len(yieldobj.massarr):
+        x = yieldobj.massarr
+        xlab = 'SN Mass'
+    else:
+        x = np.arange(1,yieldobj.numtypes+1)
+        xlab = 'sn type'
+
+    plt.figure()
+    for ploti in xrange(yieldobj.numyields):
+        plt.subplot(subplota, subplotb, ploti+1)
+        plt.plot(x,yieldarr[:,ploti])
+        plt.xlabel(xlab)
+        plt.ylabel(yieldobj.elemnames[ploti])
+    plt.tight_layout()
+    plt.show()
+
+def plot_yield_ratios(yieldobj,Fe_ix,subplota,subplotb):
+    sntypearr = np.arange(1,yieldobj.numtypes+1)
+    yieldarr = yieldobj(sntypearr)
+    
+    asplund09fe = yieldobj.map_elemnames_to_asplund09(yieldobj.elemnames) +12-7.50
+    metal_num = yieldarr/yieldobj.elemmass
+    metal_num = (metal_num.transpose()/metal_num[:,5]).transpose()
+    yieldarr = np.log10(metal_num) - asplund09fe
+    
+    if yieldobj.numtypes == len(yieldobj.massarr):
+        x = yieldobj.massarr
+        xlab = 'SN Mass'
+    else:
+        x = np.arange(1,yieldobj.numtypes+1)
+        xlab = 'sn type'
+
+    plt.figure()
+    for ploti in xrange(yieldobj.numyields):
+        plt.subplot(subplota, subplotb, ploti+1)
+        plt.plot(x,yieldarr[:,ploti])
+        plt.xlabel(xlab)
+        plt.ylabel('['+str(yieldobj.elemnames[ploti])+'/Fe]')
+    plt.tight_layout()
+    plt.show()
+
 #def convert_nomoto06_yields(yieldarr,boxsize,cellres):
 #    """
 #    Converts a nomoto06 yieldarr into [X/Fe]

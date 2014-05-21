@@ -77,9 +77,15 @@ if __name__=="__main__":
 #    filename = 'CHEMGRIDS/minihalo_chemgrid_N06ip0.100f100.0.hdf5'
 #    plotprefix = 'minihalo_N06ip0.100f100.0'
 #    Mhalo,vturb,lturb,nSN,trecovery = karlsson.params_minihalo()
-    filename = 'CHEMGRIDS/atomiccoolinghalo_chemgrid_N06ip0.100f100.0.hdf5'
-    plotprefix = 'atomiccoolinghalo_N06ip0.100f100.0'
-    Mhalo,vturb,lturb,nSN,trecovery = karlsson.params_atomiccoolinghalo()
+#    filename = 'CHEMGRIDS/atomiccoolinghalo_chemgrid_N06ip0.100f100.0.hdf5'
+#    plotprefix = 'atomiccoolinghalo_N06ip0.100f100.0'
+#    Mhalo,vturb,lturb,nSN,trecovery = karlsson.params_atomiccoolinghalo()
+    filename = 'CHEMGRIDS/minihalo_chemgrid_HW10E1.2S4m0.hdf5'
+    plotprefix = 'minihalo_HW10E1.2S4m0'
+    Mhalo,vturb,lturb,nSN,trecovery = karlsson.params_minihalo()
+#    filename = 'CHEMGRIDS/atomiccoolinghalo_chemgrid_HW10E1.2S4m0.hdf5'
+#    plotprefix = 'atomiccoolinghalo_HW10E1.2S4m0'
+#    Mhalo,vturb,lturb,nSN,trecovery = karlsson.params_atomiccoolinghalo()
 
     vturb *= 3.16/3.08 * .001 #km/s to kpc/yr
     Dt =  vturb * lturb / 3.0 #kpc^2/Myr
