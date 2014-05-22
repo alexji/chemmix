@@ -34,7 +34,7 @@ def run_one_star(j,k,Mplot,fMk,sntypearr,sntypepdf,yieldobj,masstonum,gaussianpr
     return weightedyields
 
 def run_compute_random_sn(filename,sntypepdf,yieldobj,kmax,
-                          headernotes='',
+                          headernotes='',postfix='',
                           XH=0.75,Nstars=10**5,numprocs=10):
     Mplot = np.load(karlsson.get_Mplot_filename(filename))
     masstonum = 1.0/(yieldobj.elemmass * XH)
@@ -56,7 +56,7 @@ def run_compute_random_sn(filename,sntypepdf,yieldobj,kmax,
         print "  time:",time.time()-start
     pool.close()#; pool.join()
 
-    postfix = '_'+yieldobj.shortname
+    postfix = '_'+yieldobj.shortname+postfix
     outfile = karlsson.get_chemgrid_filename(filename,postfix=postfix)
     print "Finished! Saving file to",outfile
     f = h5py.File(outfile,"w")
@@ -81,6 +81,8 @@ if __name__=="__main__":
 
     hw1 = yields.hw10yields(1.2,'S4',0)
     Hsntypepdf = relative_imf(hw1.massarr,2.35,norm=True)
+    H200sntypepdf = relative_imf(hw1.massarr,2.00,norm=True)
+    Hflatsntypepdf = relative_imf(hw1.massarr,2.00,norm=True)
 
     #run_compute_random_sn('minihalo',Nsntypepdf,n06y,10,
     #                      headernotes='salpeter imf',
@@ -96,10 +98,24 @@ if __name__=="__main__":
     #                      headernotes='salpeter imf',
     #                      Nstars=10**6,numprocs=NUMPROCS)
     
-    run_compute_random_sn('minihalo',Hsntypepdf,hw1,10,
-                          headernotes='salpeter imf',
+    #run_compute_random_sn('minihalo',Hsntypepdf,hw1,10,
+    #                      headernotes='salpeter imf',
+    #                      Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghalo',Hsntypepdf,hw1,15,
+    #                      headernotes='salpeter imf',
+    #                      Nstars=10**6,numprocs=NUMPROCS)
+    
+    #run_compute_random_sn('minihalo',H200sntypepdf,hw1,10,
+    #                      headernotes='alpha = 2.0 imf',postfix='_a2.0',
+    #                      Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghalo',H200sntypepdf,hw1,15,
+    #                      headernotes='alpha = 2.0 imf',postfix='_a2.0',
+    #                      Nstars=10**6,numprocs=NUMPROCS)
+    
+    run_compute_random_sn('minihalo',Hflatsntypepdf,hw1,10,
+                          headernotes='flat imf',postfix='_flat',
                           Nstars=10**6,numprocs=NUMPROCS)
-    run_compute_random_sn('atomiccoolinghalo',Hsntypepdf,hw1,15,
-                          headernotes='salpeter imf',
+    run_compute_random_sn('atomiccoolinghalo',Hflatsntypepdf,hw1,15,
+                          headernotes='flat imf',postfix='_flat',
                           Nstars=10**6,numprocs=NUMPROCS)
     

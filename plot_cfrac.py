@@ -47,14 +47,18 @@ def get_subplot_num(row,col,numrows,numcols):
     return 1+row*numcols+col
 
 if __name__=="__main__":
-    numrows = 3; numcols = 2
+    numrows = 5; numcols = 2
     minihalofiles = ['CHEMGRIDS/minihalo_chemgrid_N06i.hdf5',
                      'CHEMGRIDS/minihalo_chemgrid_N06ip0.100f100.0.hdf5',
-                     'CHEMGRIDS/minihalo_chemgrid_HW10E1.2S4m0.hdf5']
+                     'CHEMGRIDS/minihalo_chemgrid_HW10E1.2S4m0.hdf5',
+                     'CHEMGRIDS/minihalo_chemgrid_HW10E1.2S4m0_a2.0.hdf5',
+                     'CHEMGRIDS/minihalo_chemgrid_HW10E1.2S4m0_flat.hdf5']
     atomiccoolinghalofiles = ['CHEMGRIDS/atomiccoolinghalo_chemgrid_N06i.hdf5',
                               'CHEMGRIDS/atomiccoolinghalo_chemgrid_N06ip0.100f100.0.hdf5',
-                              'CHEMGRIDS/atomiccoolinghalo_chemgrid_HW10E1.2S4m0.hdf5']
-    yieldlabels = ['N06','N06 Cx100 (p=.1)','HW10']
+                              'CHEMGRIDS/atomiccoolinghalo_chemgrid_HW10E1.2S4m0.hdf5',
+                              'CHEMGRIDS/atomiccoolinghalo_chemgrid_HW10E1.2S4m0_a2.0.hdf5',
+                              'CHEMGRIDS/atomiccoolinghalo_chemgrid_HW10E1.2S4m0_flat.hdf5']
+    yieldlabels = ['N06','N06 Cx100 (p=.1)','HW10 a2.35', 'HW10 a2.00', 'HW10 flat']
 
     allfiles = [minihalofiles,atomiccoolinghalofiles]
 
@@ -63,13 +67,6 @@ if __name__=="__main__":
 
     elemnames = ['C', 'O', 'Mg', 'Si', 'Ca', 'Fe']
     bins = np.arange(-6.0,-1.0+0.01,0.2)
-
-#    parser = OptionParser()
-#    parser.add_option('--show',
-#                      action='store_true',dest='showplots',
-#                      default=False,
-#                      help='Call plt.show() in addition to saving the figures')
-#    options,args = parser.parse_args()
 
     plt.figure(figsize=(8,10))
     # Minihalo column
@@ -106,4 +103,5 @@ if __name__=="__main__":
             if row == numrows-1: plt.xlabel('[Fe/H]')
             else: plt.xticks([])
     plt.subplots_adjust(hspace=0,wspace=0)
+    plt.savefig("PLOTS/cfrac_feh.png")
     plt.show()
