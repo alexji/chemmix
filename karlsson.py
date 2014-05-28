@@ -224,8 +224,9 @@ def weight_chemgrid(kmax,chemgrid_in,paramfn,
     vturb *= 3.16/3.08 * .001 #km/s to kpc/yr
     Dt =  vturb * lturb / 3.0 #kpc^2/Myr
     uSN = nSN/(trecovery * (4*np.pi/3.) * (10*lturb)**3) #SN/Myr/kpc^3
-    print "Mhalo %.1e vturb %.2e lturb %f" % (Mhalo,vturb,lturb)
-    print "Dt %.2e uSN %.2e" % (Dt,uSN)
+    if verbose:
+        print "Mhalo %.1e vturb %.2e lturb %f" % (Mhalo,vturb,lturb)
+        print "Dt %.2e uSN %.2e" % (Dt,uSN)
     th = TopHat(Mhalo=Mhalo,nvir=0.1,fb=0.1551,mu=1.4)
     RHO = th.get_rho_of_t_fn()
     VMIX = get_Vmixfn_K08(RHO,Dt=Dt)
@@ -238,15 +239,19 @@ def weight_chemgrid(kmax,chemgrid_in,paramfn,
         ck = calc_ck(kmax,WISM,MUFN,PSI)
     for k in range(kmax):
         chemarr[:,:,k] *= ck[k]
-    chemarr = np.log10(np.sum(chemarr,2))
+    chemarr = np.sum(chemarr,2)
     if elemnames != None:
-        asplund09ZHsun = yields.map_elemnames_to_asplund09(elemnames)
-        for z in range(len(elemnames)):
-            chemarr[:,z] -= asplund09ZHsun[z]
-            if verbose: 
-                print "%s: min %3.2f max %3.2f" % (elemnames[z],np.min(chemarr[:,z]),np.max(chemarr[:,z]))
+        chemarr = convert_to_solar(elemnames,chemarr,verbose)
+        return chemarr,ck
 
-    return chemarr,ck
+def convert_to_solar(elemnames,chemarr,verbose=False):
+    chemarr = np.log10(chemarr)
+    asplund09ZHsun = yields.map_elemnames_to_asplund09(elemnames)
+    for z in range(len(elemnames)):
+        chemarr[:,z] -= asplund09ZHsun[z]
+        if verbose: 
+            print "%s: min %3.2f max %3.2f" % (elemnames[z],np.min(chemarr[:,z]),np.max(chemarr[:,z]))
+    return chemarr
 
 def draw_from_distr(N,x,pdf,seed=None,eps=10**-10):
     if seed!=None:

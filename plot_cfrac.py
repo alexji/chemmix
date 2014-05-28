@@ -48,17 +48,34 @@ def get_subplot_num(row,col,numrows,numcols):
 
 if __name__=="__main__":
     numrows = 5; numcols = 2
-    minihalofiles = ['CHEMGRIDS/minihalo_chemgrid_N06i.hdf5',
-                     'CHEMGRIDS/minihalo_chemgrid_N06ip0.100f100.0.hdf5',
+    plotname = "cfrac_feh.png"
+    minihalofiles = [#'CHEMGRIDS/minihalo_chemgrid_N06i.hdf5',
+                     #'CHEMGRIDS/minihalo_chemgrid_N06ip0.100f100.0.hdf5',
+                     'CHEMGRIDS/minihalo_chemgrid_N06_M25.hdf5',
                      'CHEMGRIDS/minihalo_chemgrid_HW10E1.2S4m0.hdf5',
-                     'CHEMGRIDS/minihalo_chemgrid_HW10E1.2S4m0_a2.0.hdf5',
-                     'CHEMGRIDS/minihalo_chemgrid_HW10E1.2S4m0_flat.hdf5']
-    atomiccoolinghalofiles = ['CHEMGRIDS/atomiccoolinghalo_chemgrid_N06i.hdf5',
-                              'CHEMGRIDS/atomiccoolinghalo_chemgrid_N06ip0.100f100.0.hdf5',
+                     #'CHEMGRIDS/minihalo_chemgrid_HW10E1.2S4m0_a1.35.hdf5',
+                     'CHEMGRIDS/minihalo_chemgrid_HW10E1.2S4m0_flat.hdf5',
+                     #'CHEMGRIDS/minihalo_chemgrid_mixN06HW10p0.1.hdf5',
+                     'CHEMGRIDS/minihalo_chemgrid_mixN06HW10p0.5.hdf5',
+                     'CHEMGRIDS/minihalo_chemgrid_mixN06HW10p0.9.hdf5']
+    atomiccoolinghalofiles = [#'CHEMGRIDS/atomiccoolinghalo_chemgrid_N06i.hdf5',
+                              #'CHEMGRIDS/atomiccoolinghalo_chemgrid_N06ip0.100f100.0.hdf5',
+                              'CHEMGRIDS/atomiccoolinghalo_chemgrid_N06_M25.hdf5',
                               'CHEMGRIDS/atomiccoolinghalo_chemgrid_HW10E1.2S4m0.hdf5',
-                              'CHEMGRIDS/atomiccoolinghalo_chemgrid_HW10E1.2S4m0_a2.0.hdf5',
-                              'CHEMGRIDS/atomiccoolinghalo_chemgrid_HW10E1.2S4m0_flat.hdf5']
-    yieldlabels = ['N06','N06 Cx100 (p=.1)','HW10 a2.35', 'HW10 a2.00', 'HW10 flat']
+                              #'CHEMGRIDS/atomiccoolinghalo_chemgrid_HW10E1.2S4m0_a1.35.hdf5',
+                              'CHEMGRIDS/atomiccoolinghalo_chemgrid_HW10E1.2S4m0_flat.hdf5',
+                              #'CHEMGRIDS/atomiccoolinghalo_chemgrid_mixN06HW10p0.1.hdf5',
+                              'CHEMGRIDS/atomiccoolinghalo_chemgrid_mixN06HW10p0.5.hdf5',
+                              'CHEMGRIDS/atomiccoolinghalo_chemgrid_mixN06HW10p0.9.hdf5']
+    yieldlabels = [#'N06',
+                   #'N06 Cx100 (p=.1)',
+                   'N06 M25',
+                   'HW10 a2.35', 
+                   #'HW10 a1.35', 
+                   'HW10 flat', 
+                   #'NHW (p=.1)', 
+                   'NHW (p=.5)',
+                   'NHW (p=.9)']
 
     allfiles = [minihalofiles,atomiccoolinghalofiles]
 
@@ -66,7 +83,7 @@ if __name__=="__main__":
     for filelist in allfiles: assert numrows == len(filelist)
 
     elemnames = ['C', 'O', 'Mg', 'Si', 'Ca', 'Fe']
-    bins = np.arange(-6.0,-1.0+0.01,0.2)
+    bins = np.arange(-6.0,-1.0+0.01,0.1)
 
     plt.figure(figsize=(8,10))
     # Minihalo column
@@ -98,10 +115,12 @@ if __name__=="__main__":
                          color='black',marker='.',drawstyle='steps-mid')
             plt.ylim((0,1.1)); plt.xlim((np.min(bins),np.max(bins)))
             #plt.ylabel(r'$N$, $f_{Crich}$')
+
+            plt.plot([-4,-3],[0.75,0.3],'bo-')
             if col == 0: plt.ylabel(yieldlabels[row])
-            else: plt.yticks([])
-            if row == numrows-1: plt.xlabel('[Fe/H]')
-            else: plt.xticks([])
+            else: plt.gca().yaxis.set_ticklabels([])
+            if row == numrows-1: plt.xlabel('[Ca/H]') #plt.xlabel('[Fe/H]')
+            else: plt.gca().xaxis.set_ticklabels([])
     plt.subplots_adjust(hspace=0,wspace=0)
-    plt.savefig("PLOTS/cfrac_feh.png")
+    #plt.savefig("PLOTS/"+plotname)
     plt.show()

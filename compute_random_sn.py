@@ -72,17 +72,27 @@ def run_compute_random_sn(filename,sntypepdf,yieldobj,kmax,
 
 if __name__=="__main__":
     reload(yields)
-    NUMPROCS = 10
+    NUMPROCS = 15
     n06y = yields.nomoto06interpyields()
     Nsntypepdf = relative_imf(n06y.massarr,2.35,norm=True) #salpeter imf
 
     n06p1 = yields.nomoto06interpyields_Cenhance(p=0.1,f=100)
-    Csntypepdf = n06p1.modify_sntypepdf(Nsntypepdf)
+    Csntypepdf1 = n06p1.modify_sntypepdf(Nsntypepdf)
+
+    n06p2 = yields.nomoto06interpyields_Cadd(p=0.1,MC=0.8)
+    Csntypepdf2 = n06p2.modify_sntypepdf(Nsntypepdf)
 
     hw1 = yields.hw10yields(1.2,'S4',0)
     Hsntypepdf = relative_imf(hw1.massarr,2.35,norm=True)
-    H200sntypepdf = relative_imf(hw1.massarr,2.00,norm=True)
-    Hflatsntypepdf = relative_imf(hw1.massarr,2.00,norm=True)
+    H135sntypepdf = relative_imf(hw1.massarr,1.35,norm=True)
+    Hflatsntypepdf = relative_imf(hw1.massarr,0.00,norm=True)
+
+    #nhw1 = yields.mixN06HW10yields(0.1,1.2,'S4',0)
+    #NHWsntypepdf1 = nhw1.modify_sntypepdf(Nsntypepdf)
+    #nhw2 = yields.mixN06HW10yields(0.5,1.2,'S4',0)
+    #NHWsntypepdf2 = nhw2.modify_sntypepdf(Nsntypepdf)
+    #nhw3 = yields.mixN06HW10yields(0.9,1.2,'S4',0)
+    #NHWsntypepdf3 = nhw3.modify_sntypepdf(Nsntypepdf)
 
     #run_compute_random_sn('minihalo',Nsntypepdf,n06y,10,
     #                      headernotes='salpeter imf',
@@ -91,10 +101,17 @@ if __name__=="__main__":
     #                      headernotes='salpeter imf',
     #                      Nstars=10**6,numprocs=NUMPROCS)
     
-    #run_compute_random_sn('minihalo',Csntypepdf,n06p1,10,
+    #run_compute_random_sn('minihalo',Csntypepdf1,n06p1,10,
     #                      headernotes='salpeter imf',
     #                      Nstars=10**6,numprocs=NUMPROCS)
-    #run_compute_random_sn('atomiccoolinghalo',Csntypepdf,n06p1,15,
+    #run_compute_random_sn('atomiccoolinghalo',Csntypepdf1,n06p1,15,
+    #                      headernotes='salpeter imf',
+    #                      Nstars=10**6,numprocs=NUMPROCS)
+    
+    #run_compute_random_sn('minihalo',Csntypepdf2,n06p2,10,
+    #                      headernotes='salpeter imf',
+    #                      Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghalo',Csntypepdf2,n06p2,15,
     #                      headernotes='salpeter imf',
     #                      Nstars=10**6,numprocs=NUMPROCS)
     
@@ -105,17 +122,47 @@ if __name__=="__main__":
     #                      headernotes='salpeter imf',
     #                      Nstars=10**6,numprocs=NUMPROCS)
     
-    #run_compute_random_sn('minihalo',H200sntypepdf,hw1,10,
-    #                      headernotes='alpha = 2.0 imf',postfix='_a2.0',
+    #run_compute_random_sn('minihalo',H135sntypepdf,hw1,10,
+    #                      headernotes='alpha = 1.35 imf',postfix='_a1.35',
     #                      Nstars=10**6,numprocs=NUMPROCS)
-    #run_compute_random_sn('atomiccoolinghalo',H200sntypepdf,hw1,15,
-    #                      headernotes='alpha = 2.0 imf',postfix='_a2.0',
+    #run_compute_random_sn('atomiccoolinghalo',H135sntypepdf,hw1,15,
+    #                      headernotes='alpha = 1.35 imf',postfix='_a1.35',
+    #                      Nstars=10**6,numprocs=NUMPROCS)
+    #
+    #run_compute_random_sn('minihalo',Hflatsntypepdf,hw1,10,
+    #                      headernotes='flat imf',postfix='_flat',
+    #                      Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghalo',Hflatsntypepdf,hw1,15,
+    #                      headernotes='flat imf',postfix='_flat',
     #                      Nstars=10**6,numprocs=NUMPROCS)
     
-    run_compute_random_sn('minihalo',Hflatsntypepdf,hw1,10,
-                          headernotes='flat imf',postfix='_flat',
-                          Nstars=10**6,numprocs=NUMPROCS)
-    run_compute_random_sn('atomiccoolinghalo',Hflatsntypepdf,hw1,15,
-                          headernotes='flat imf',postfix='_flat',
-                          Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('minihalo',NHWsntypepdf1,nhw1,10,
+    #                      headernotes='salpeter imf',
+    #                      Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghalo',NHWsntypepdf1,nhw1,15,
+    #                      headernotes='salpeter imf',
+    #                      Nstars=10**6,numprocs=NUMPROCS)
+    #
+    #run_compute_random_sn('minihalo',NHWsntypepdf2,nhw2,10,
+    #                      headernotes='salpeter imf',
+    #                      Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghalo',NHWsntypepdf2,nhw2,15,
+    #                      headernotes='salpeter imf',
+    #                      Nstars=10**6,numprocs=NUMPROCS)
+    #
+    #run_compute_random_sn('minihalo',NHWsntypepdf3,nhw3,10,
+    #                      headernotes='salpeter imf',
+    #                      Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghalo',NHWsntypepdf3,nhw3,15,
+    #                      headernotes='salpeter imf',
+    #                      Nstars=10**6,numprocs=NUMPROCS)
+    
+    #n = yields.nomoto06yields()
+    #nimf = np.array([0,0,0,0,1,0,0])
+    #run_compute_random_sn('minihalo',nimf,n,10,
+    #                      headernotes='M=25',postfix='_M25',
+    #                      Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghalo',nimf,n,15,
+    #                      headernotes='M=25',postfix='_M25',
+    #                      Nstars=10**6,numprocs=NUMPROCS)
     
