@@ -5,8 +5,9 @@ import karlsson
 from tophat import TopHat
 
 import h5py
+from optparse import OptionParser
 
-def run_compute_mmix_grid(filename,Mhalo,vturb,lturb,tmax,dt,tmin=0.0):
+def run_compute_mmix_grid(filename,Mhalo,zvir,vturb,lturb,tmax,dt,tmin=0.0):
     """
     Assume a TopHat density function
     Mhalo: Msun
@@ -14,13 +15,14 @@ def run_compute_mmix_grid(filename,Mhalo,vturb,lturb,tmax,dt,tmin=0.0):
     lturb: kpc
     tmax, dt: Myr
     """
-    vturb *= 3.16/3.08 * .001 #km/s to kpc/yr
+    vturb *= 3.16/3.08 * .001 #km/s to kpc/Myr
     Dt =  vturb * lturb / 3.0
     print filename
-    print "Mhalo",Mhalo,"vturb",vturb,"lturb",lturb,"Dt",Dt
+    print "Mhalo",Mhalo,"zvir",zvir
+    print "vturb",vturb,"lturb",lturb,"Dt",Dt
     print "tmax",tmax,"dt",dt
 
-    th = TopHat(Mhalo=Mhalo,nvir=0.1,fb=0.1551,mu=1.4)
+    th = TopHat(Mhalo=Mhalo,zvir=zvir,fb=0.1551,mu=1.4)
     RHO = th.get_rho_of_t_fn()
     VMIX = karlsson.get_Vmixfn_K08(RHO,Dt=Dt)
     MMIXGRID_FILENAME = karlsson.get_mmixgrid_filename(filename)
@@ -45,29 +47,37 @@ def run_compute_mmix_grid(filename,Mhalo,vturb,lturb,tmax,dt,tmin=0.0):
     print "Wrote",MMIXGRID_FILENAME
 
 if __name__=="__main__":
+    parser = OptionParser()
+    parser.add_option("--minihalo",action='store_true',dest='minihalo',default=False)
+    parser.add_option("--atomiccoolinghalo",action='store_true',dest='atomiccoolinghalo',default=False)
+    options,args = parser.parse_args()
+    
     ## Compute Minihalo
-    Mhalo,vturb,lturb,nSN,trecovery = karlsson.params_minihalo()
-    tmax = 100. #Myr
-    dt = 0.003
-    if dt == 0.01:
-        filename='lores_minihalo'
-    if dt == 0.003:
-        filename='minihalo'
-    if dt == 0.001:
-        filename='hires_minihalo'
-    run_compute_mmix_grid(filename,Mhalo,vturb,lturb,tmax,dt)
+    if options.minihalo:
+        Mhalo,zvir,vturb,lturb,nSN,trecovery = karlsson.params_minihalo()
+        fact = 1.5
+        tmax = 100. * fact #Myr
+        dt = 0.003*fact
+        if dt == 0.01*fact:
+            filename='lores_minihalo'
+        if dt == 0.003*fact:
+            filename='minihalo'
+        if dt == 0.001*fact:
+            filename='hires_minihalo'
+        run_compute_mmix_grid(filename,Mhalo,zvir,vturb,lturb,tmax,dt)
 
     ## Compute Fat Minihalo
-    filename='fatminihalo'
+    #filename='fatminihalo'
 
     ## Compute Atomic Cooling Halo
-    Mhalo,vturb,lturb,nSN,trecovery = karlsson.params_atomiccoolinghalo()
-    tmax = 1000. #Myr
-    dt = 0.03
-    if dt == 0.1:
-        filename='lores_atomiccoolinghalo'
-    if dt == 0.03:
-        filename='atomiccoolinghalo'
-    if dt == 0.01:
-        filename='hires_atomiccoolinghalo'
-    run_compute_mmix_grid(filename,Mhalo,vturb,lturb,tmax,dt)
+    if options.atomiccoolinghalo:
+        Mhalo,zvir,vturb,lturb,nSN,trecovery = karlsson.params_atomiccoolinghalo()
+        tmax = 1000. #Myr
+        dt = 0.03
+        if dt == 0.1:
+            filename='lores_atomiccoolinghalo'
+        if dt == 0.03:
+            filename='atomiccoolinghalo'
+        if dt == 0.01:
+            filename='hires_atomiccoolinghalo'
+        run_compute_mmix_grid(filename,Mhalo,zvir,vturb,lturb,tmax,dt)

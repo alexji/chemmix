@@ -22,11 +22,19 @@ def logMbinsMplot(logMmin,logMmax,logdM):
     return Mbins,Mplot
     
 def params_minihalo():
-    #Mhalo/Msun, vturb/km/s, lturb/kpc, nSN, trecovery/Myr
-    return 10.**6,2.,.01,2,10
+    #Mhalo/Msun, zvir, vturb/km/s, lturb/kpc, nSN, trecovery/Myr
+    Mhalo = 10**6; zvir = 25; nSN = 2; trecovery = 10
+    th = TopHat(Mhalo=Mhalo,zvir=zvir)
+    lturb = th.Rvir/10.; vturb = th.vvir
+    return Mhalo, zvir, vturb, lturb, nSN, trecovery
+    #return 10.**6,25,2.,.01,2,10
 def params_atomiccoolinghalo():
-    #Mhalo/Msun, vturb/km/s, lturb/kpc, nSN, trecovery/Myr
-    return 10.**8,10.,.1,10,300
+    #Mhalo/Msun, zvir, vturb/km/s, lturb/kpc, nSN, trecovery/Myr
+    Mhalo = 10**8; zvir = 10; nSN = 10; trecovery = 300
+    th = TopHat(Mhalo=Mhalo,zvir=zvir)
+    lturb = th.Rvir/10.; vturb = th.vvir
+    return Mhalo, zvir, vturb, lturb, nSN, trecovery
+    #return 10.**8,10,10.,.1,10,300
 
 def get_mmixgrid_filename(filename,mmixgrid_foldername = "MMIXGRIDS"):
     return mmixgrid_foldername+'/'+filename+'_mmixgrid.hdf5'
@@ -220,14 +228,14 @@ def weight_chemgrid(kmax,chemgrid_in,paramfn,
     assert kmax<=kmax_tmp
     chemarr = chemgrid_in[:,:,0:kmax]
     
-    Mhalo,vturb,lturb,nSN,trecovery = paramfn()
+    Mhalo,zvir,vturb,lturb,nSN,trecovery = paramfn()
     vturb *= 3.16/3.08 * .001 #km/s to kpc/yr
     Dt =  vturb * lturb / 3.0 #kpc^2/Myr
     uSN = nSN/(trecovery * (4*np.pi/3.) * (10*lturb)**3) #SN/Myr/kpc^3
     if verbose:
         print "Mhalo %.1e vturb %.2e lturb %f" % (Mhalo,vturb,lturb)
         print "Dt %.2e uSN %.2e" % (Dt,uSN)
-    th = TopHat(Mhalo=Mhalo,nvir=0.1,fb=0.1551,mu=1.4)
+    th = TopHat(Mhalo=Mhalo,zvir=zvir,fb=0.1551,mu=1.4)
     RHO = th.get_rho_of_t_fn()
     VMIX = get_Vmixfn_K08(RHO,Dt=Dt)
     WISM = wISM_K05

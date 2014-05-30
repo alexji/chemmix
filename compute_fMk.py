@@ -3,10 +3,11 @@ import karlsson
 import time
 import pylab as plt
 import h5py
+from optparse import OptionParser
 
 from tophat import TopHat
 
-def run_compute_fMk(filename,logMmin,logMmax,logdM,Mhalo,vturb,lturb,nSN,trecovery,kmin=1,kmax=20,saveplot=True,numprocs=1):
+def run_compute_fMk(filename,logMmin,logMmax,logdM,Mhalo,zvir,vturb,lturb,nSN,trecovery,kmin=1,kmax=20,saveplot=True,numprocs=1):
     """
     Assume a TopHat density function
     Mhalo: Msun
@@ -15,14 +16,15 @@ def run_compute_fMk(filename,logMmin,logMmax,logdM,Mhalo,vturb,lturb,nSN,trecove
     nSN: number
     trecovery: Myr
     """
-    vturb *= 3.16/3.08 * .001 #km/s to kpc/yr
+    vturb *= 3.16/3.08 * .001 #km/s to kpc/Myr
     Dt =  vturb * lturb / 3.0 #kpc^2/Myr
     uSN = nSN/(trecovery * (4*np.pi/3.) * (10*lturb)**3) #SN/Myr/kpc^3
     print filename
-    print "Mhalo",Mhalo,"vturb",vturb,"lturb",lturb
+    print "Mhalo",Mhalo,"zvir",zvir
+    print "vturb",vturb,"lturb",lturb
     print "Dt",Dt,"uSN",uSN
 
-    th = TopHat(Mhalo=Mhalo,nvir=0.1,fb=0.1551,mu=1.4)
+    th = TopHat(Mhalo=Mhalo,zvir=zvir,fb=0.1551,mu=1.4)
     RHO = th.get_rho_of_t_fn()
     VMIX = karlsson.get_Vmixfn_K08(RHO,Dt=Dt)
     MMIXGRID_FILENAME = karlsson.get_mmixgrid_filename(filename)
@@ -65,21 +67,28 @@ def run_compute_fMk(filename,logMmin,logMmax,logdM,Mhalo,vturb,lturb,nSN,trecove
     np.save(karlsson.get_Mbins_filename(filename),Mbins)
     np.save(karlsson.get_Mplot_filename(filename),Mplot)
     if saveplot:
-        plt.savefig(filename+'_fMk.png',bbox_inches='tight')
+        plt.savefig('PLOTS/'+filename+'_fMk.png',bbox_inches='tight')
         plt.show()
 
 if __name__=="__main__":
+    parser = OptionParser()
+    parser.add_option("--minihalo",action='store_true',dest='minihalo',default=False)
+    parser.add_option("--atomiccoolinghalo",action='store_true',dest='atomiccoolinghalo',default=False)
+    options,args = parser.parse_args()
+
     ## minihalo
-    filename='minihalo'
-    Mhalo,vturb,lturb,nSN,trecovery = karlsson.params_minihalo()
-    run_compute_fMk(filename,0,7,.01,
-                    Mhalo,vturb,lturb,nSN,trecovery,numprocs=1)
+    if options.minihalo:
+        filename='minihalo'
+        Mhalo,zvir,vturb,lturb,nSN,trecovery = karlsson.params_minihalo()
+        run_compute_fMk(filename,0,7,.01,
+                        Mhalo,zvir,vturb,lturb,nSN,trecovery,numprocs=1)
 
     ## atomic cooling halo
-    filename='atomiccoolinghalo'
-    Mhalo,vturb,lturb,nSN,trecovery = karlsson.params_atomiccoolinghalo()
-    run_compute_fMk(filename,0,8,.01,
-                    Mhalo,vturb,lturb,nSN,trecovery,numprocs=1)
+    if options.atomiccoolinghalo:
+        filename='atomiccoolinghalo'
+        Mhalo,zvir,vturb,lturb,nSN,trecovery = karlsson.params_atomiccoolinghalo()
+        run_compute_fMk(filename,0,8,.01,
+                        Mhalo,zvir,vturb,lturb,nSN,trecovery,numprocs=1)
 
 #    fMk_foldername = "MMIXDISTR/"
 
