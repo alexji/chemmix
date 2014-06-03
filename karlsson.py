@@ -202,10 +202,14 @@ def get_DMlist(Mbins,tarr,tauarr,Mmixgrid,numprocs=1):
         pool.close(); pool.join()
     return DMlist
 
-def calc_fMk(k,Mbins,DMlist,Vmix,wISM,mufn,SFR,normalize=True):
+def calc_fMk(k,Mbins,DMlist,Vmix,wISM,mufn,SFR,normalize=True,
+             SFRlms=None):
     assert k > 0
     nbins = len(Mbins)-1
     assert nbins == len(DMlist)
+
+    if SFRlms == None:
+        SFRlms = SFR
 
     fMk = np.zeros(nbins)
     for i,DM in enumerate(DMlist):
@@ -215,7 +219,7 @@ def calc_fMk(k,Mbins,DMlist,Vmix,wISM,mufn,SFR,normalize=True):
         muarr = mufn(t)
         wISMarr = wISM(k-1,muarr)
         sfr1 = SFR(t-tau)
-        sfr2 = SFR(t)
+        sfr2 = SFRlms(t)
 
         fMk[i] = np.sum(dt*dtau*Vmixarr*wISMarr*sfr1*sfr2)
     if normalize:
