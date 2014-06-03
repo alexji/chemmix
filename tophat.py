@@ -95,7 +95,7 @@ class TopHat:
         """ return interpolated density fn in cm^-3 """
         tmax = self.B*2*np.pi
         #tarr = np.concatenate((np.logspace(-4,np.log10(tmax/Nres),Nres/2),np.linspace(tmax/Nres,tmax,Nres/2)))
-        tarr = np.logspace(-4,np.log10(tmax),Nres)
+        tarr = np.logspace(-4,np.log10(tmax),Nres,endpoint=False)
         narr = self.n_of_t(tarr)
         tarr = np.concatenate((tarr,[100000.])); narr = np.concatenate((narr,[self.nvir]))
         if self.verbose:
@@ -108,7 +108,7 @@ class TopHat:
     def get_rho_of_t_fn(self,Nres=300):
         tmax = self.B*2*np.pi
         #tarr = np.concatenate((np.logspace(-4,np.log10(tmax/Nres),Nres/2),np.linspace(tmax/Nres,tmax,Nres/2)))
-        tarr = np.logspace(-4,np.log10(tmax),Nres)
+        tarr = np.logspace(-4,np.log10(tmax),Nres,endpoint=False)
         rhoarr = self.rho_of_t(tarr)
         tarr = np.concatenate((tarr,[100000.])); rhoarr = np.concatenate((rhoarr,[self.mu*1.678*(10**-24)*self.nvir]))
         if self.verbose:

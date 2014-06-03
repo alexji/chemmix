@@ -7,7 +7,7 @@ from optparse import OptionParser
 
 from tophat import TopHat
 
-def run_compute_fMk(filename,logMmin,logMmax,logdM,Mhalo,zvir,vturb,lturb,nSN,trecovery,kmin=1,kmax=20,saveplot=True,numprocs=1):
+def run_compute_fMk(filename,logMmin,logMmax,logdM,Mhalo,zvir,vturb,lturb,nSN,trecovery,logMdil,kmin=1,kmax=20,saveplot=True,numprocs=1):
     """
     Assume a TopHat density function
     Mhalo: Msun
@@ -26,7 +26,7 @@ def run_compute_fMk(filename,logMmin,logMmax,logdM,Mhalo,zvir,vturb,lturb,nSN,tr
 
     th = TopHat(Mhalo=Mhalo,zvir=zvir,fb=0.1551,mu=1.4)
     RHO = th.get_rho_of_t_fn()
-    VMIX = karlsson.get_Vmixfn_K08(RHO,Dt=Dt)
+    VMIX = karlsson.get_Vmixfn_K08(RHO,Dt=Dt,Mdil=10**logMdil)
     MMIXGRID_FILENAME = karlsson.get_mmixgrid_filename(filename)
 
     WISM = karlsson.wISM_K05
@@ -74,21 +74,25 @@ if __name__=="__main__":
     parser = OptionParser()
     parser.add_option("--minihalo",action='store_true',dest='minihalo',default=False)
     parser.add_option("--atomiccoolinghalo",action='store_true',dest='atomiccoolinghalo',default=False)
+    parser.add_option("--mdil",action='store',type='int',dest='logMdil',default=5)
     options,args = parser.parse_args()
+    logMdil = options.logMdil
 
     ## minihalo
     if options.minihalo:
         filename='minihalo'
+        if logMdil != 5: filename += str(logMdil)
         Mhalo,zvir,vturb,lturb,nSN,trecovery = karlsson.params_minihalo()
         run_compute_fMk(filename,0,7,.01,
-                        Mhalo,zvir,vturb,lturb,nSN,trecovery,numprocs=1)
+                        Mhalo,zvir,vturb,lturb,nSN,trecovery,logMdil,numprocs=1)
 
     ## atomic cooling halo
     if options.atomiccoolinghalo:
         filename='atomiccoolinghalo'
+        if logMdil != 5: filename += str(logMdil)
         Mhalo,zvir,vturb,lturb,nSN,trecovery = karlsson.params_atomiccoolinghalo()
         run_compute_fMk(filename,0,8,.01,
-                        Mhalo,zvir,vturb,lturb,nSN,trecovery,numprocs=1)
+                        Mhalo,zvir,vturb,lturb,nSN,trecovery,logMdil,numprocs=1)
 
 #    fMk_foldername = "MMIXDISTR/"
 

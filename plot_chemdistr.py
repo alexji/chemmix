@@ -100,8 +100,20 @@ if __name__=="__main__":
 #    filename = 'CHEMGRIDS/minihalo_chemgrid_mixN06HW10p0.5.hdf5'
 #    plotprefix = 'minihalo_NHWE1.2S4m0'
 #    paramfn = karlsson.params_minihalo
-    filename = 'CHEMGRIDS/atomiccoolinghalo_chemgrid_mixN06HW10p0.5.hdf5'
-    plotprefix = 'atomiccoolinghalo_NHWE1.2S4m0'
+#    filename = 'CHEMGRIDS/atomiccoolinghalo_chemgrid_mixN06HW10p0.5.hdf5'
+#    plotprefix = 'atomiccoolinghalo_NHWE1.2S4m0'
+#    paramfn = karlsson.params_atomiccoolinghalo
+#    filename = 'CHEMGRIDS/minihalo_chemgrid_I05T07_p0.5.hdf5'
+#    plotprefix = 'minihalo_I05T07_p0.5'
+#    paramfn = karlsson.params_minihalo
+#    filename = 'CHEMGRIDS/atomiccoolinghalo_chemgrid_I05T07_p0.5.hdf5'
+#    plotprefix = 'atomiccoolinghalo_I05T07_p0.5'
+#    paramfn = karlsson.params_atomiccoolinghalo
+#    filename = 'CHEMGRIDS/minihalo4_chemgrid_I05T07_p0.5.hdf5'
+#    plotprefix = 'minihalo4_I05T07_p0.5'
+#    paramfn = karlsson.params_minihalo
+    filename = 'CHEMGRIDS/atomiccoolinghalo4_chemgrid_I05T07_p0.5.hdf5'
+    plotprefix = 'atomiccoolinghalo4_I05T07_p0.5'
     paramfn = karlsson.params_atomiccoolinghalo
 
     parser = OptionParser()

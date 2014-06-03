@@ -7,7 +7,7 @@ from tophat import TopHat
 import h5py
 from optparse import OptionParser
 
-def run_compute_mmix_grid(filename,Mhalo,zvir,vturb,lturb,tmax,dt,tmin=0.0):
+def run_compute_mmix_grid(filename,Mhalo,zvir,vturb,lturb,tmax,dt,tmin=0.0,logMdil=5):
     """
     Assume a TopHat density function
     Mhalo: Msun
@@ -24,7 +24,7 @@ def run_compute_mmix_grid(filename,Mhalo,zvir,vturb,lturb,tmax,dt,tmin=0.0):
 
     th = TopHat(Mhalo=Mhalo,zvir=zvir,fb=0.1551,mu=1.4)
     RHO = th.get_rho_of_t_fn()
-    VMIX = karlsson.get_Vmixfn_K08(RHO,Dt=Dt)
+    VMIX = karlsson.get_Vmixfn_K08(RHO,Dt=Dt,Mdil=10**logMdil)
     MMIXGRID_FILENAME = karlsson.get_mmixgrid_filename(filename)
 
     f = h5py.File(MMIXGRID_FILENAME,"w")
@@ -50,12 +50,14 @@ if __name__=="__main__":
     parser = OptionParser()
     parser.add_option("--minihalo",action='store_true',dest='minihalo',default=False)
     parser.add_option("--atomiccoolinghalo",action='store_true',dest='atomiccoolinghalo',default=False)
+    parser.add_option("--mdil",action='store',type='int',dest='logMdil',default=5)
     options,args = parser.parse_args()
+    logMdil = options.logMdil
     
     ## Compute Minihalo
     if options.minihalo:
         Mhalo,zvir,vturb,lturb,nSN,trecovery = karlsson.params_minihalo()
-        fact = 1.5
+        fact = 1.25
         tmax = 100. * fact #Myr
         dt = 0.003*fact
         if dt == 0.01*fact:
@@ -64,7 +66,8 @@ if __name__=="__main__":
             filename='minihalo'
         if dt == 0.001*fact:
             filename='hires_minihalo'
-        run_compute_mmix_grid(filename,Mhalo,zvir,vturb,lturb,tmax,dt)
+        if logMdil != 5: filename += str(logMdil)
+        run_compute_mmix_grid(filename,Mhalo,zvir,vturb,lturb,tmax,dt,logMdil=float(logMdil))
 
     ## Compute Fat Minihalo
     #filename='fatminihalo'
@@ -80,4 +83,5 @@ if __name__=="__main__":
             filename='atomiccoolinghalo'
         if dt == 0.01:
             filename='hires_atomiccoolinghalo'
-        run_compute_mmix_grid(filename,Mhalo,zvir,vturb,lturb,tmax,dt)
+        if logMdil != 5: filename += str(logMdil)
+        run_compute_mmix_grid(filename,Mhalo,zvir,vturb,lturb,tmax,dt,logMdil=float(logMdil))

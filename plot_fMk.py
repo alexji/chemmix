@@ -55,7 +55,7 @@ if __name__=="__main__":
     ax.set_yscale('log'); ax.set_ylabel(r'M$_{\rm mix}$ (q1,med,q3) $M_\odot$')
     #ax.set_ylim((10**-2.5,10**8.5))
     plt.legend(loc='best')
-
+    plt.savefig('PLOTS/fMk_boxplots.png',bbox_inches='tight')
 
 
     f1 = h5py.File(karlsson.get_mmixgrid_filename('minihalo'),'r')
@@ -73,14 +73,10 @@ if __name__=="__main__":
     fig2 = plt.figure()
     ax2 = fig2.gca()
     
-    #etaarr = np.linspace(0,2*np.pi)
-    #ax2.plot(th1.cycloidt(etaarr),th1.cycloidR(etaarr),'k-',lw=2)
-    #ax2.plot(th2.cycloidt(etaarr),th2.cycloidR(etaarr),'r-',lw=1)
-
-    etaarr1 = th1.get_eta_from_t(tarr1)
     ax2.plot(tarr1,rho1(tarr1),'k',lw=2)
     ax2.plot(tarr2,rho2(tarr2),'r',lw=1)
     ax2.set_xscale('log')
     ax2.set_yscale('log')
+    plt.savefig('PLOTS/tophat.png',bbox_inches='tight')
 
     plt.show()

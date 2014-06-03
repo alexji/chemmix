@@ -32,6 +32,7 @@ def labelaxes(xlabel,kmax,KMAXFLAG,ax,irow,icol,numrows,numcols):
 
 if __name__=="__main__":
     KMAXFLAG = True
+    MDIL=5
 
     numrows = 10; numcols = 2
     #label = 'HW10E1.2S4m0'
@@ -40,15 +41,25 @@ if __name__=="__main__":
     #label = 'N06i'
     #label = 'mixN06HW10p0.5'
     #label = 'N06ip0.100f100.0'
-    label = 'N06ip0.100MC0.800000'
+    #label = 'N06ip0.100MC0.800000'
+    label = 'I05T07_p0.5'
+    #label = 'I05T07_p0.5Mmax'
     print "Using",label
-    minihalofile = 'CHEMGRIDS/minihalo_chemgrid_'+label+'.hdf5'
-    atomiccoolinghalofile = 'CHEMGRIDS/atomiccoolinghalo_chemgrid_'+label+'.hdf5'
+    if MDIL==5:
+        minihalofile = 'CHEMGRIDS/minihalo_chemgrid_'+label+'.hdf5'
+        atomiccoolinghalofile = 'CHEMGRIDS/atomiccoolinghalo_chemgrid_'+label+'.hdf5'
+    else:
+        minihalofile = 'CHEMGRIDS/minihalo'+str(MDIL)+'_chemgrid_'+label+'.hdf5'
+        atomiccoolinghalofile = 'CHEMGRIDS/atomiccoolinghalo'+str(MDIL)+'_chemgrid_'+label+'.hdf5'
+        label += '_Mdil'+str(MDIL)
 
     elemnames = ['C', 'O', 'Mg', 'Si', 'Ca', 'Fe']
-    FeHbins = np.arange(-8.0,-1.0+0.01,0.25)
+    #FeHbins = np.arange(-8.0,-1.0+0.01,0.25)
+    #CFebins = np.arange(-1.0,5.0+0.01,0.25)
+    #CHbins  = np.arange(-8.0,-1.0+0.01,0.25)
+    FeHbins = np.arange(-9.5,0.5+0.01,0.25)
     CFebins = np.arange(-1.0,5.0+0.01,0.25)
-    CHbins  = np.arange(-8.0,-1.0+0.01,0.25)
+    CHbins  = np.arange(-5.0,0.5+0.01,0.25)
 
     cmap = cm.Greys; images = []
     vmin = 1e40; vmax = -1e40

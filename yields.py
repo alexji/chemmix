@@ -36,6 +36,36 @@ class yieldsbase(object):
     def __repr__(self):
         return self.name
 
+class I05N06yields(yieldsbase):
+    def __init__(self):
+        self.name = "Iwamoto05 and Tominago07 Yields"
+        self.shortname = "I05T07"
+        self.numyields = 6
+        self.elemnames = ['C','O','Mg','Si','Ca','Fe']
+        self.elemmass = map_elemnames_to_elemmass(self.elemnames)
+        self.numtypes  = 2
+    def yieldfn(self,sn_type):
+        if sn_type==1: #I05
+            return [.20, 1.1e-5,.39,3e-4,3.6e-5,2.7e-6]
+        if sn_type==2: #N06 M=20
+            return [ 0.21100001,  2.11000009,  0.150354,    0.099692,    0.00624737,  0.072287  ]
+        
+#class I05T07yields(yieldsbase):
+#    def __init__(self):
+#        self.name = "Iwamoto05 and Tominago07 Yields"
+#        self.shortname = "I05T07"
+#        self.numyields = 6
+#        self.elemnames = ['C','O','Mg','Si','Ca','Fe']
+#        self.elemmass = map_elemnames_to_elemmass(self.elemnames)
+#        self.numtypes  = 2
+#    def yieldfn(self,sn_type):
+#        if sn_type==1: #I05
+#            return [.20, 1.1e-5,.39,3e-4,3.6e-5,2.7e-6]
+#        if sn_type==2: #T07 
+#            return []
+#        #self.massarr = np.array([13.,15,18,20,25,30,40])
+        
+
 class nomoto06yields(yieldsbase):
     def __init__(self):
         self.name = "Nomoto 06 Yields"

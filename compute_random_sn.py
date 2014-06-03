@@ -35,12 +35,17 @@ def run_one_star(j,k,Mplot,fMk,sntypearr,sntypepdf,yieldobj,masstonum,gaussianpr
 
 def run_compute_random_sn(filename,sntypepdf,yieldobj,kmax,
                           headernotes='',postfix='',
+                          Mmax=None,
                           XH=0.75,Nstars=10**5,numprocs=10):
     Mplot = np.load(karlsson.get_Mplot_filename(filename))
     masstonum = 1.0/(yieldobj.elemmass * XH)
     output = np.zeros((Nstars,yieldobj.numyields,kmax))
     sntypearr = np.arange(1,yieldobj.numtypes+1)
     assert len(sntypepdf)==len(sntypearr) #consistency check
+    if Mmax != None:
+        keepii = Mplot <= Mmax
+        badii  = Mplot > Mmax
+        Mplot = np.concatenate((Mplot[keepii],[Mmax]))
 
     pool = Pool(numprocs)
     print "Using",numprocs,"processors to run",filename,"with N =",Nstars
@@ -48,6 +53,9 @@ def run_compute_random_sn(filename,sntypepdf,yieldobj,kmax,
         print "Starting k =",k
         start = time.time()
         fMk = np.load(karlsson.get_fMk_filename(filename,k))
+        if Mmax != None:
+            badprob = np.sum(fMk[badii])
+            fMk = np.concatenate((fMk[keepii],[badprob]))
         starmaker = functools.partial(run_one_star,k=k,Mplot=Mplot,fMk=fMk,
                                       sntypearr=sntypearr,sntypepdf=sntypepdf,
                                       yieldobj=yieldobj,masstonum=masstonum)
@@ -73,20 +81,41 @@ def run_compute_random_sn(filename,sntypepdf,yieldobj,kmax,
 if __name__=="__main__":
     reload(yields)
     NUMPROCS = 15
-    n06y = yields.nomoto06interpyields()
-    Nsntypepdf = relative_imf(n06y.massarr,2.35,norm=True) #salpeter imf
+    fb = 0.1551
 
-    n06p1 = yields.nomoto06interpyields_Cenhance(p=0.1,f=100)
-    Csntypepdf1 = n06p1.modify_sntypepdf(Nsntypepdf)
+    i05n06 = yields.I05N06yields()
+    p = 0.5; sntypepdf = np.array([p,1-p])
+    #run_compute_random_sn('minihalo',sntypepdf,i05n06,10,
+    #                      postfix='_p0.5',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghalo',sntypepdf,i05n06,15,
+    #                      postfix='_p0.5',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('minihalo4',sntypepdf,i05n06,10,
+    #                      postfix='_p0.5',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghalo4',sntypepdf,i05n06,15,
+    #                      postfix='_p0.5',Nstars=10**6,numprocs=NUMPROCS)
+    run_compute_random_sn('minihalo',sntypepdf,i05n06,10,Mmax=fb*10**6,
+                          postfix='_p0.5Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    run_compute_random_sn('atomiccoolinghalo',sntypepdf,i05n06,15,Mmax=fb*10**8,
+                          postfix='_p0.5Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('minihalo4',sntypepdf,i05n06,10,Mmax=fb*10**6,
+    #                      postfix='_p0.5Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghalo4',sntypepdf,i05n06,15,Mmax=fb*10**8,
+    #                      postfix='_p0.5Mmax',Nstars=10**6,numprocs=NUMPROCS)
 
-    n06p2 = yields.nomoto06interpyields_Cadd(p=0.1,MC=0.8)
-    Csntypepdf2 = n06p2.modify_sntypepdf(Nsntypepdf)
-
-    hw1 = yields.hw10yields(1.2,'S4',0)
-    Hsntypepdf = relative_imf(hw1.massarr,2.35,norm=True)
-    H135sntypepdf = relative_imf(hw1.massarr,1.35,norm=True)
-    Hflatsntypepdf = relative_imf(hw1.massarr,0.00,norm=True)
-
+    #n06y = yields.nomoto06interpyields()
+    #Nsntypepdf = relative_imf(n06y.massarr,2.35,norm=True) #salpeter imf
+    #
+    #n06p1 = yields.nomoto06interpyields_Cenhance(p=0.1,f=100)
+    #Csntypepdf1 = n06p1.modify_sntypepdf(Nsntypepdf)
+    #
+    #n06p2 = yields.nomoto06interpyields_Cadd(p=0.1,MC=0.8)
+    #Csntypepdf2 = n06p2.modify_sntypepdf(Nsntypepdf)
+    #
+    #hw1 = yields.hw10yields(1.2,'S4',0)
+    #Hsntypepdf = relative_imf(hw1.massarr,2.35,norm=True)
+    #H135sntypepdf = relative_imf(hw1.massarr,1.35,norm=True)
+    #Hflatsntypepdf = relative_imf(hw1.massarr,0.00,norm=True)
+    #
     #nhw1 = yields.mixN06HW10yields(0.1,1.2,'S4',0)
     #NHWsntypepdf1 = nhw1.modify_sntypepdf(Nsntypepdf)
     #nhw2 = yields.mixN06HW10yields(0.5,1.2,'S4',0)
