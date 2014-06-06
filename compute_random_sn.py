@@ -35,9 +35,9 @@ def run_one_star(j,k,Mplot,fMk,sntypearr,sntypepdf,yieldobj,masstonum,gaussianpr
 
 def run_compute_random_sn(filename,sntypepdf,yieldobj,kmax,
                           headernotes='',postfix='',
-                          Mmax=None,
+                          Mmax=None,rhop2=False,
                           XH=0.75,Nstars=10**5,numprocs=10):
-    Mplot = np.load(karlsson.get_Mplot_filename(filename))
+    Mplot = np.load(karlsson.get_Mplot_filename(filename,rhop2=rhop2))
     masstonum = 1.0/(yieldobj.elemmass * XH)
     output = np.zeros((Nstars,yieldobj.numyields,kmax))
     sntypearr = np.arange(1,yieldobj.numtypes+1)
@@ -52,7 +52,7 @@ def run_compute_random_sn(filename,sntypepdf,yieldobj,kmax,
     for k in xrange(1,kmax+1):
         print "Starting k =",k
         start = time.time()
-        fMk = np.load(karlsson.get_fMk_filename(filename,k))
+        fMk = np.load(karlsson.get_fMk_filename(filename,k,rhop2=rhop2))
         if Mmax != None:
             badprob = np.sum(fMk[badii])
             fMk = np.concatenate((fMk[keepii],[badprob]))
@@ -65,7 +65,7 @@ def run_compute_random_sn(filename,sntypepdf,yieldobj,kmax,
     pool.close()#; pool.join()
 
     postfix = '_'+yieldobj.shortname+postfix
-    outfile = karlsson.get_chemgrid_filename(filename,postfix=postfix)
+    outfile = karlsson.get_chemgrid_filename(filename,postfix=postfix,rhop2=rhop2)
     print "Finished! Saving file to",outfile
     f = h5py.File(outfile,"w")
     f['chemgrid']=output
@@ -80,10 +80,41 @@ def run_compute_random_sn(filename,sntypepdf,yieldobj,kmax,
 
 if __name__=="__main__":
     reload(yields)
+    RHOP2 = False
     NUMPROCS = 15
     fb = 0.1551
 
     i05n06 = yields.I05N06yields()
+    p = 0.1; sntypepdf = np.array([p,1-p])
+    #run_compute_random_sn('minihalo',sntypepdf,i05n06,10,
+    #                      postfix='_p0.1',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghalo',sntypepdf,i05n06,15,
+    #                      postfix='_p0.1',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('minihalo4',sntypepdf,i05n06,10,
+    #                      postfix='_p0.1',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghalo4',sntypepdf,i05n06,15,
+    #                      postfix='_p0.1',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('minihalo',sntypepdf,i05n06,10,Mmax=fb*10**6,
+    #                      postfix='_p0.1Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghalo',sntypepdf,i05n06,15,Mmax=fb*10**8,
+    #                      postfix='_p0.1Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('minihalo4',sntypepdf,i05n06,10,Mmax=fb*10**6,
+    #                      postfix='_p0.1Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghalo4',sntypepdf,i05n06,15,Mmax=fb*10**8,
+    #                      postfix='_p0.1Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghaloearly',sntypepdf,i05n06,15,
+    #                      postfix='_p0.1',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghalolate',sntypepdf,i05n06,15,
+    #                      postfix='_p0.1',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghaloearly',sntypepdf,i05n06,15,Mmax=fb*10**8,
+    #                      postfix='_p0.1Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghalolate',sntypepdf,i05n06,15,Mmax=fb*10**8,
+    #                      postfix='_p0.1Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    run_compute_random_sn('atomiccoolinghalolate_lowvturb',sntypepdf,i05n06,15,Mmax=fb*10**8,
+                          postfix='_p0.1Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    run_compute_random_sn('atomiccoolinghalo_lowmass',sntypepdf,i05n06,15,Mmax=fb*10**8,
+                          postfix='_p0.1Mmax',Nstars=10**6,numprocs=NUMPROCS)
+
     p = 0.5; sntypepdf = np.array([p,1-p])
     #run_compute_random_sn('minihalo',sntypepdf,i05n06,10,
     #                      postfix='_p0.5',Nstars=10**6,numprocs=NUMPROCS)
@@ -93,14 +124,80 @@ if __name__=="__main__":
     #                      postfix='_p0.5',Nstars=10**6,numprocs=NUMPROCS)
     #run_compute_random_sn('atomiccoolinghalo4',sntypepdf,i05n06,15,
     #                      postfix='_p0.5',Nstars=10**6,numprocs=NUMPROCS)
-    run_compute_random_sn('minihalo',sntypepdf,i05n06,10,Mmax=fb*10**6,
-                          postfix='_p0.5Mmax',Nstars=10**6,numprocs=NUMPROCS)
-    run_compute_random_sn('atomiccoolinghalo',sntypepdf,i05n06,15,Mmax=fb*10**8,
-                          postfix='_p0.5Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('minihalo',sntypepdf,i05n06,10,Mmax=fb*10**6,
+    #                      postfix='_p0.5Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghalo',sntypepdf,i05n06,15,Mmax=fb*10**8,
+    #                      postfix='_p0.5Mmax',Nstars=10**6,numprocs=NUMPROCS)
     #run_compute_random_sn('minihalo4',sntypepdf,i05n06,10,Mmax=fb*10**6,
     #                      postfix='_p0.5Mmax',Nstars=10**6,numprocs=NUMPROCS)
     #run_compute_random_sn('atomiccoolinghalo4',sntypepdf,i05n06,15,Mmax=fb*10**8,
     #                      postfix='_p0.5Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghaloearly',sntypepdf,i05n06,15,
+    #                      postfix='_p0.5',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghalolate',sntypepdf,i05n06,15,
+    #                      postfix='_p0.5',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghaloearly',sntypepdf,i05n06,15,Mmax=fb*10**8,
+    #                      postfix='_p0.5Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghalolate',sntypepdf,i05n06,15,Mmax=fb*10**8,
+    #                      postfix='_p0.5Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    run_compute_random_sn('atomiccoolinghalolate_lowvturb',sntypepdf,i05n06,15,Mmax=fb*10**8,
+                          postfix='_p0.5Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    run_compute_random_sn('atomiccoolinghalo_lowmass',sntypepdf,i05n06,15,Mmax=fb*10**8,
+                          postfix='_p0.5Mmax',Nstars=10**6,numprocs=NUMPROCS)
+
+    p = 0.9; sntypepdf = np.array([p,1-p])
+    #run_compute_random_sn('minihalo',sntypepdf,i05n06,10,
+    #                      postfix='_p0.9',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghalo',sntypepdf,i05n06,15,
+    #                      postfix='_p0.9',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('minihalo4',sntypepdf,i05n06,10,
+    #                      postfix='_p0.9',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghalo4',sntypepdf,i05n06,15,
+    #                      postfix='_p0.9',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('minihalo',sntypepdf,i05n06,10,Mmax=fb*10**6,
+    #                      postfix='_p0.9Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghalo',sntypepdf,i05n06,15,Mmax=fb*10**8,
+    #                      postfix='_p0.9Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('minihalo4',sntypepdf,i05n06,10,Mmax=fb*10**6,
+    #                      postfix='_p0.9Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghalo4',sntypepdf,i05n06,15,Mmax=fb*10**8,
+    #                      postfix='_p0.9Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghaloearly',sntypepdf,i05n06,15,
+    #                      postfix='_p0.9',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghalolate',sntypepdf,i05n06,15,
+    #                      postfix='_p0.9',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghaloearly',sntypepdf,i05n06,15,Mmax=fb*10**8,
+    #                      postfix='_p0.9Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghalolate',sntypepdf,i05n06,15,Mmax=fb*10**8,
+    #                      postfix='_p0.9Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    run_compute_random_sn('atomiccoolinghalolate_lowvturb',sntypepdf,i05n06,15,Mmax=fb*10**8,
+                          postfix='_p0.9Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    run_compute_random_sn('atomiccoolinghalo_lowmass',sntypepdf,i05n06,15,Mmax=fb*10**8,
+                          postfix='_p0.9Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    
+    p = 0.95; sntypepdf = np.array([p,1-p])
+    #run_compute_random_sn('atomiccoolinghalo',sntypepdf,i05n06,15,Mmax=fb*10**8,
+    #                      postfix='_p0.95Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghaloearly',sntypepdf,i05n06,15,Mmax=fb*10**8,
+    #                      postfix='_p0.95Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghalolate',sntypepdf,i05n06,15,Mmax=fb*10**8,
+    #                      postfix='_p0.95Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    run_compute_random_sn('atomiccoolinghalolate_lowvturb',sntypepdf,i05n06,15,Mmax=fb*10**8,
+                          postfix='_p0.95Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    run_compute_random_sn('atomiccoolinghalo_lowmass',sntypepdf,i05n06,15,Mmax=fb*10**8,
+                          postfix='_p0.95Mmax',Nstars=10**6,numprocs=NUMPROCS)
+
+    p = 0.99; sntypepdf = np.array([p,1-p])
+    #run_compute_random_sn('atomiccoolinghalo',sntypepdf,i05n06,15,Mmax=fb*10**8,
+    #                      postfix='_p0.99Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghaloearly',sntypepdf,i05n06,15,Mmax=fb*10**8,
+    #                      postfix='_p0.99Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('atomiccoolinghalolate',sntypepdf,i05n06,15,Mmax=fb*10**8,
+    #                      postfix='_p0.99Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    run_compute_random_sn('atomiccoolinghalolate_lowvturb',sntypepdf,i05n06,15,Mmax=fb*10**8,
+                          postfix='_p0.99Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    run_compute_random_sn('atomiccoolinghalo_lowmass',sntypepdf,i05n06,15,Mmax=fb*10**8,
+                          postfix='_p0.99Mmax',Nstars=10**6,numprocs=NUMPROCS)
 
     #n06y = yields.nomoto06interpyields()
     #Nsntypepdf = relative_imf(n06y.massarr,2.35,norm=True) #salpeter imf

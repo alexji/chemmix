@@ -8,6 +8,8 @@ from tophat import TopHat
 
 
 if __name__=="__main__":
+    RHOP2 = False
+
     filenames = ['minihalo','atomiccoolinghalo']
     lefttaillist = []; righttaillist = []
     q1list = []; medlist = []; q3list = []
@@ -17,13 +19,13 @@ if __name__=="__main__":
 
     fig = plt.figure(); ax = fig.gca()
     for i,filename in enumerate(filenames):
-        Mplot = np.load(karlsson.get_Mplot_filename(filename))
+        Mplot = np.load(karlsson.get_Mplot_filename(filename,rhop2=RHOP2))
         minarr = []; maxarr = []
         meanarr = []
         lefttailarr = []; righttailarr = []
         q1arr = []; medarr = []; q3arr = []
         for k in karr:
-            fMk = np.load(karlsson.get_fMk_filename(filename,k))
+            fMk = np.load(karlsson.get_fMk_filename(filename,k,rhop2=RHOP2))
             distr = stats.rv_discrete(name=str(k),values=(Mplot,fMk))
             minarr.append(distr.ppf(0))
             lefttailarr.append(distr.ppf(.05))

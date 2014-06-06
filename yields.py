@@ -39,7 +39,7 @@ class yieldsbase(object):
 class I05N06yields(yieldsbase):
     def __init__(self):
         self.name = "Iwamoto05 and Tominago07 Yields"
-        self.shortname = "I05T07"
+        self.shortname = "I05N06"
         self.numyields = 6
         self.elemnames = ['C','O','Mg','Si','Ca','Fe']
         self.elemmass = map_elemnames_to_elemmass(self.elemnames)

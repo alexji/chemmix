@@ -27,25 +27,57 @@ def params_minihalo():
     th = TopHat(Mhalo=Mhalo,zvir=zvir)
     lturb = th.Rvir/10.; vturb = th.vvir
     return Mhalo, zvir, vturb, lturb, nSN, trecovery
-    #return 10.**6,25,2.,.01,2,10
+def params_fatminihalo(): # TODO
+    #Mhalo/Msun, zvir, vturb/km/s, lturb/kpc, nSN, trecovery/Myr
+    Mhalo = 10**7; zvir = 18; nSN = 2; trecovery = 10
+    th = TopHat(Mhalo=Mhalo,zvir=zvir)
+    lturb = th.Rvir/10.; vturb = th.vvir
+    return Mhalo, zvir, vturb, lturb, nSN, trecovery
+def params_atomiccoolinghaloearly():
+    #Mhalo/Msun, zvir, vturb/km/s, lturb/kpc, nSN, trecovery/Myr
+    Mhalo = 10**8; zvir = 15; nSN = 10; trecovery = 300
+    th = TopHat(Mhalo=Mhalo,zvir=zvir)
+    lturb = th.Rvir/10.; vturb = th.vvir
+    return Mhalo, zvir, vturb, lturb, nSN, trecovery
 def params_atomiccoolinghalo():
     #Mhalo/Msun, zvir, vturb/km/s, lturb/kpc, nSN, trecovery/Myr
     Mhalo = 10**8; zvir = 10; nSN = 10; trecovery = 300
     th = TopHat(Mhalo=Mhalo,zvir=zvir)
     lturb = th.Rvir/10.; vturb = th.vvir
     return Mhalo, zvir, vturb, lturb, nSN, trecovery
-    #return 10.**8,10,10.,.1,10,300
+def params_atomiccoolinghalolate():
+    #Mhalo/Msun, zvir, vturb/km/s, lturb/kpc, nSN, trecovery/Myr
+    Mhalo = 10**8; zvir = 7; nSN = 10; trecovery = 300
+    th = TopHat(Mhalo=Mhalo,zvir=zvir)
+    lturb = th.Rvir/10.; vturb = th.vvir
+    return Mhalo, zvir, vturb, lturb, nSN, trecovery
+def params_atomiccoolinghalolate_lowvturb():
+    #Mhalo/Msun, zvir, vturb/km/s, lturb/kpc, nSN, trecovery/Myr
+    Mhalo = 10**8; zvir = 7; nSN = 10; trecovery = 300
+    th = TopHat(Mhalo=Mhalo,zvir=zvir)
+    lturb = th.Rvir/10.; vturb = th.vvir/10.
+    return Mhalo, zvir, vturb, lturb, nSN, trecovery
+def params_atomiccoolinghalo_lowmass():
+    #Mhalo/Msun, zvir, vturb/km/s, lturb/kpc, nSN, trecovery/Myr
+    Mhalo = 10**7.4; zvir = 10; nSN = 10; trecovery = 300
+    th = TopHat(Mhalo=Mhalo,zvir=zvir)
+    lturb = th.Rvir/10.; vturb = th.vvir
+    return Mhalo, zvir, vturb, lturb, nSN, trecovery
 
+def RHOP2f(filename,rhop2):
+    if rhop2: return filename+'_rhop2'
+    return filename
 def get_mmixgrid_filename(filename,mmixgrid_foldername = "MMIXGRIDS"):
     return mmixgrid_foldername+'/'+filename+'_mmixgrid.hdf5'
-def get_fMk_filename(filename,k,mmixdistr_foldername = "MMIXDISTR"):
-    return mmixdistr_foldername+'/'+filename+'_fM'+str(k)+'.npy'
-def get_Mbins_filename(filename,mmixdistr_foldername = "MMIXDISTR"):
-    return mmixdistr_foldername+'/'+filename+'_Mbins.npy'
-def get_Mplot_filename(filename,mmixdistr_foldername = "MMIXDISTR"):
-    return mmixdistr_foldername+'/'+filename+'_Mplot.npy'
-def get_chemgrid_filename(filename,chemgrid_foldername = "CHEMGRIDS",postfix=''):
-    return chemgrid_foldername+'/'+filename+'_chemgrid'+postfix+'.hdf5'
+def get_fMk_filename(filename,k,rhop2=False,mmixdistr_foldername = "MMIXDISTR"):
+    return mmixdistr_foldername+'/'+RHOP2f(filename,rhop2)+'_fM'+str(k)+'.npy'
+def get_Mbins_filename(filename,rhop2=False,mmixdistr_foldername = "MMIXDISTR"):
+    return mmixdistr_foldername+'/'+RHOP2f(filename,rhop2)+'_Mbins.npy'
+def get_Mplot_filename(filename,rhop2=False,mmixdistr_foldername = "MMIXDISTR"):
+    return mmixdistr_foldername+'/'+RHOP2f(filename,rhop2)+'_Mplot.npy'
+def get_chemgrid_filename(filename,chemgrid_foldername = "CHEMGRIDS",
+                          rhop2=False,postfix=''):
+    return chemgrid_foldername+'/'+RHOP2f(filename,rhop2)+'_chemgrid'+postfix+'.hdf5'
 
 def calc_sigE(t,rho_of_t,Mdil):
     """ Calculate initial dilution radius for Vmix_karlsson08 (kpc) """

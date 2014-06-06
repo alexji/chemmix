@@ -7,7 +7,7 @@ from optparse import OptionParser
 
 from tophat import TopHat
 
-def run_compute_fMk(filename,logMmin,logMmax,logdM,Mhalo,zvir,vturb,lturb,nSN,trecovery,logMdil,kmin=1,kmax=20,saveplot=True,numprocs=1):
+def run_compute_fMk(filename,logMmin,logMmax,logdM,Mhalo,zvir,vturb,lturb,nSN,trecovery,logMdil,rhop2=False,kmin=1,kmax=20,saveplot=False,numprocs=1):
     """
     Assume a TopHat density function
     Mhalo: Msun
@@ -20,6 +20,7 @@ def run_compute_fMk(filename,logMmin,logMmax,logdM,Mhalo,zvir,vturb,lturb,nSN,tr
     Dt =  vturb * lturb / 3.0 #kpc^2/Myr
     uSN = nSN/(trecovery * (4*np.pi/3.) * (10*lturb)**3) #SN/Myr/kpc^3
     print filename
+    if (rhop2): print "psiLMS ~ rho"
     print "Mhalo",Mhalo,"zvir",zvir
     print "vturb",vturb,"lturb",lturb
     print "Dt",Dt,"uSN",uSN
@@ -55,17 +56,21 @@ def run_compute_fMk(filename,logMmin,logMmax,logdM,Mhalo,zvir,vturb,lturb,nSN,tr
     if saveplot:
         plt.figure()
     for k in range(kmin,kmax+1):
-        filename_k = karlsson.get_fMk_filename(filename,k)
+        filename_k = karlsson.get_fMk_filename(filename,k,rhop2)
         start = time.time()
-        fMk = karlsson.calc_fMk(k,Mbins,DMlist,VMIX,WISM,MUFN,PSI)
+        if rhop2:
+            fMk = karlsson.calc_fMk(k,Mbins,DMlist,VMIX,WISM,MUFN,PSI,
+                                    SFRlms=RHO)
+        else:
+            fMk = karlsson.calc_fMk(k,Mbins,DMlist,VMIX,WISM,MUFN,PSI)
         print "calc_fM",k,time.time()-start,len(fMk)
         np.save(filename_k,fMk)
         #fMk = np.load(FILENAME+'_fM'+str(k)+'.npy')
         #print np.sum(fMk)
         if saveplot:
             plt.plot(Mplot,fMk,label=str(k))
-    np.save(karlsson.get_Mbins_filename(filename),Mbins)
-    np.save(karlsson.get_Mplot_filename(filename),Mplot)
+    np.save(karlsson.get_Mbins_filename(filename,rhop2=rhop2),Mbins)
+    np.save(karlsson.get_Mplot_filename(filename,rhop2=rhop2),Mplot)
     if saveplot:
         plt.savefig('PLOTS/'+filename+'_fMk.png',bbox_inches='tight')
         plt.show()
@@ -74,7 +79,13 @@ if __name__=="__main__":
     parser = OptionParser()
     parser.add_option("--minihalo",action='store_true',dest='minihalo',default=False)
     parser.add_option("--atomiccoolinghalo",action='store_true',dest='atomiccoolinghalo',default=False)
-    parser.add_option("--mdil",action='store',type='int',dest='logMdil',default=5)
+    parser.add_option("--atomiccoolinghaloearly",action='store_true',dest='atomiccoolinghaloearly',default=False)
+    parser.add_option("--atomiccoolinghalolate", action='store_true',dest='atomiccoolinghalolate', default=False)
+    parser.add_option("--atomiccoolinghalolatelowvturb",action='store_true',dest='atomiccoolinghalolate_lowvturb',default=False)
+    parser.add_option("--atomiccoolinghalolowmass",action='store_true',dest='atomiccoolinghalo_lowmass',default=False)
+    parser.add_option("--logmdil",action='store',type='int',dest='logMdil',default=5)
+    parser.add_option("--rhop2",action="store_true",dest='rhop2',default=False)
+    parser.add_option("--save",action="store_true",dest='saveplot',default=False)
     options,args = parser.parse_args()
     logMdil = options.logMdil
 
@@ -84,7 +95,8 @@ if __name__=="__main__":
         if logMdil != 5: filename += str(logMdil)
         Mhalo,zvir,vturb,lturb,nSN,trecovery = karlsson.params_minihalo()
         run_compute_fMk(filename,0,7,.01,
-                        Mhalo,zvir,vturb,lturb,nSN,trecovery,logMdil,numprocs=1)
+                        Mhalo,zvir,vturb,lturb,nSN,trecovery,logMdil,
+                        options.rhop2,saveplot=options.saveplot,numprocs=1)
 
     ## atomic cooling halo
     if options.atomiccoolinghalo:
@@ -92,7 +104,36 @@ if __name__=="__main__":
         if logMdil != 5: filename += str(logMdil)
         Mhalo,zvir,vturb,lturb,nSN,trecovery = karlsson.params_atomiccoolinghalo()
         run_compute_fMk(filename,0,8,.01,
-                        Mhalo,zvir,vturb,lturb,nSN,trecovery,logMdil,numprocs=1)
+                        Mhalo,zvir,vturb,lturb,nSN,trecovery,logMdil,
+                        options.rhop2,saveplot=options.saveplot,numprocs=1)
+    if options.atomiccoolinghaloearly:
+        filename='atomiccoolinghaloearly'
+        if logMdil != 5: filename += str(logMdil)
+        Mhalo,zvir,vturb,lturb,nSN,trecovery = karlsson.params_atomiccoolinghaloearly()
+        run_compute_fMk(filename,0,8,.01,
+                        Mhalo,zvir,vturb,lturb,nSN,trecovery,logMdil,
+                        options.rhop2,saveplot=options.saveplot,numprocs=1)
+    if options.atomiccoolinghalolate:
+        filename='atomiccoolinghalolate'
+        if logMdil != 5: filename += str(logMdil)
+        Mhalo,zvir,vturb,lturb,nSN,trecovery = karlsson.params_atomiccoolinghalolate()
+        run_compute_fMk(filename,0,8,.01,
+                        Mhalo,zvir,vturb,lturb,nSN,trecovery,logMdil,
+                        options.rhop2,saveplot=options.saveplot,numprocs=1)
+    if options.atomiccoolinghalolate_lowvturb:
+        filename='atomiccoolinghalolate_lowvturb'
+        if logMdil != 5: filename += str(logMdil)
+        Mhalo,zvir,vturb,lturb,nSN,trecovery = karlsson.params_atomiccoolinghalolate_lowvturb()
+        run_compute_fMk(filename,0,8,.01,
+                        Mhalo,zvir,vturb,lturb,nSN,trecovery,logMdil,
+                        options.rhop2,saveplot=options.saveplot,numprocs=1)
+    if options.atomiccoolinghalo_lowmass:
+        filename='atomiccoolinghalo_lowmass'
+        if logMdil != 5: filename += str(logMdil)
+        Mhalo,zvir,vturb,lturb,nSN,trecovery = karlsson.params_atomiccoolinghalo_lowmass()
+        run_compute_fMk(filename,0,8,.01,
+                        Mhalo,zvir,vturb,lturb,nSN,trecovery,logMdil,
+                        options.rhop2,saveplot=options.saveplot,numprocs=1)
 
 #    fMk_foldername = "MMIXDISTR/"
 
