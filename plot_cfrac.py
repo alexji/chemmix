@@ -7,41 +7,6 @@ import scipy.stats
 import karlsson
 from tophat import TopHat
 
-def compute_cfrac(C,Fe,CFe_crit=0.75,bins=None,
-                  returnallinfo=False):
-    Nstar=len(C)
-    assert Nstar == len(Fe)
-    CFe = C - Fe
-    
-    if bins==None:
-        binwidth = 0.2
-        binmin = np.ceil(np.min(Fe))
-        while binmin > np.min(Fe):
-            binmin -= binwidth
-        binmax = np.floor(np.max(Fe))
-        while binmin > np.min(Fe):
-            binmax += binwidth
-        bins = np.arange(binmin,binmax+binwidth/2.,binwidth)
-    binplot = (bins[0:-1] + bins[1:])/2.0
-    assert len(binplot) == len(bins)-1
-    fracarr = np.zeros(len(binplot))
-    NCarr = np.zeros(len(binplot))
-    NTarr = np.zeros(len(binplot))
-
-    Crich = CFe > CFe_crit
-    ii = np.digitize(Fe,bins)
-    for ibin in xrange(1,len(binplot)+1):
-        starsinbin = (ii == ibin)
-        NCarr[ibin-1] = np.sum(Crich[starsinbin])
-        NTarr[ibin-1] = np.sum(starsinbin)
-    fracarr = NCarr/NTarr
-    errarr  = [np.abs(fracarr - err/NTarr) for err in scipy.stats.poisson.interval(0.95,NCarr)]
-
-    if returnallinfo:
-        return binplot,fracarr,errarr,NCarr,NTarr
-    else:
-        return binplot,fracarr,errarr
-
 def get_subplot_num(row,col,numrows,numcols):
     assert row < numrows; assert col < numcols
     return 1+row*numcols+col
@@ -105,8 +70,8 @@ if __name__=="__main__":
             f.close()
             chemarr,ck = karlsson.weight_chemgrid(kmax,chemarr,paramfn,
                                                   elemnames=elemnames,verbose=True)
-            FeH,Cfrac,CfracErr = compute_cfrac(chemarr[:,0],chemarr[:,5],
-                                               bins=bins)
+            FeH,Cfrac,CfracErr = karlsson.compute_cfrac(chemarr[:,0],chemarr[:,5],
+                                                        bins=bins)
             h,x = np.histogram(chemarr[:,5],bins=bins)
             h = h/float(np.max(h))
             plt.bar(x[:-1],h,np.diff(x),

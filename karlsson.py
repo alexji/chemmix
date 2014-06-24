@@ -21,6 +21,28 @@ def logMbinsMplot(logMmin,logMmax,logdM):
     Mplot = 10.**(np.arange(logMmin,logMmax,logdM)+logdM/2.)
     return Mbins,Mplot
     
+def get_Dt_uSN(vturb,lturb,nSN,trecovery):
+    vturb *= 3.16/3.08 * .001 #km/s to kpc/Myr
+    Dt =  vturb * lturb / 3.0 #kpc^2/Myr
+    uSN = nSN/(trecovery * (4*np.pi/3.) * (10*lturb)**3) #SN/Myr/kpc^3
+    return Dt,uSN
+def get_environment_fns(paramfn,logMdil=5verbose=False):
+    Mhalo,zvir,vturb,lturb,nSN,trecovery = paramfn()
+    Dt,uSN = get_Dt_uSN(vturb,lturb,nSN,trecovery)
+    if verbose:
+        print "Mhalo %.1e zvir %f vturb %.2e lturb %f" % (Mhalo,zvir,vturb,lturb)
+        print "Dt %.2e uSN %.2e" % (Dt,uSN)
+    th = TopHat(Mhalo=Mhalo,zvir=zvir)
+    RHO = th.get_rho_of_t_fn()
+    VMIX = get_Vmixfn_K08(RHO,Dt=Dt,Mdil=10**logMdil)
+    return th,RHO,VMIX
+
+def params_k08():
+    #Mhalo/Msun, zvir, vturb/km/s, lturb/kpc
+    Mhalo = 10**8; zvir = 10
+    th = TopHat(Mhalo=Mhalo,zvir=zvir)
+    lturb = th.Rvir/10.; vturb = th.vvir
+    return Mhalo,zvir,vturb,lturb
 def params_minihalo():
     #Mhalo/Msun, zvir, vturb/km/s, lturb/kpc, nSN, trecovery/Myr
     Mhalo = 10**6; zvir = 25; nSN = 2; trecovery = 10
@@ -109,6 +131,10 @@ def uSN_G08_const(t):
 def wISM_K05(k,mu):
     return np.exp(-1.*mu)*mu**k/factorial(k)
 
+def wISM_III(k,mu):
+    """ NOT normalized!"""
+    return np.exp(-mu - ((mu-k)**2)/4.) * mu**k/factorial(k)
+
 def Vmix_K05(t,sigma = 7*10**-4):
     """
     t in Myr, sigma in kpc^2/Myr
@@ -139,8 +165,9 @@ def get_mufn_K05A(tmin=0,tmax=2000,dt=1.0):
     muarr = [quad(lambda tp: Vmix_K05(t-tp)*uSN_K05A(tp),tmin,t)[0] for t in tarr]
     return interp1d(tarr,muarr)
 
-def get_mufn(Vmix,uSN,tmin=0,tmax=2000,dt=1.0):
-    tarr = np.arange(tmin,tmax,dt)
+def get_mufn(Vmix,uSN,tarr=None,tmin=0,tmax=2000,dt=1.0):
+    if tarr == None:
+        tarr = np.arange(tmin,tmax,dt)
     muarr = [quad(lambda tp: Vmix(t-tp)*uSN(tp),tmin,t)[0] for t in tarr]
     return interp1d(tarr,muarr)
 
@@ -234,14 +261,16 @@ def get_DMlist(Mbins,tarr,tauarr,Mmixgrid,numprocs=1):
         pool.close(); pool.join()
     return DMlist
 
-def calc_fMk(k,Mbins,DMlist,Vmix,wISM,mufn,SFR,normalize=True,
-             SFRlms=None):
+def calc_fMk(k,Mbins,DMlist,Vmix,WISM,mufn,SFR,normalize=True,
+             SFRlms=None):#, WISMlms_0=None):
     assert k > 0
     nbins = len(Mbins)-1
     assert nbins == len(DMlist)
 
     if SFRlms == None:
         SFRlms = SFR
+    #if WISMlms_0 == None:
+    #    WISMlms_0 = lambda mu: 1. if type(mu)==float else 1+np.zeros(len(mu))
 
     fMk = np.zeros(nbins)
     for i,DM in enumerate(DMlist):
@@ -249,52 +278,65 @@ def calc_fMk(k,Mbins,DMlist,Vmix,wISM,mufn,SFR,normalize=True,
         t = DM[:,0]; tau = DM[:,1]; dt = DM[:,2]; dtau = DM[:,3]
         Vmixarr = Vmix(tau)
         muarr = mufn(t)
-        wISMarr = wISM(k-1,muarr)
+        WISMarr = WISM(k-1,muarr)
+        WISMlmsarr = WISMlms_0(muarr)
         sfr1 = SFR(t-tau)
         sfr2 = SFRlms(t)
 
-        fMk[i] = np.sum(dt*dtau*Vmixarr*wISMarr*sfr1*sfr2)
+        #fMk[i] = np.sum(dt*dtau*Vmixarr*WISMarr*WISMlmsarr*sfr1*sfr2)
+        fMk[i] = np.sum(dt*dtau*Vmixarr*WISMarr*sfr1*sfr2)
     if normalize:
         fMk = fMk/np.sum(fMk)
     return fMk
 
-def weight_chemgrid(kmax,chemgrid_in,paramfn,
-                    elemnames=None,verbose=False):
-    Nstar,numyields,kmax_tmp = chemgrid_in.shape
-    assert kmax<=kmax_tmp
-    chemarr = chemgrid_in[:,:,0:kmax]
-    
-    Mhalo,zvir,vturb,lturb,nSN,trecovery = paramfn()
-    vturb *= 3.16/3.08 * .001 #km/s to kpc/yr
-    Dt =  vturb * lturb / 3.0 #kpc^2/Myr
-    uSN = nSN/(trecovery * (4*np.pi/3.) * (10*lturb)**3) #SN/Myr/kpc^3
-    if verbose:
-        print "Mhalo %.1e vturb %.2e lturb %f" % (Mhalo,vturb,lturb)
-        print "Dt %.2e uSN %.2e" % (Dt,uSN)
-    th = TopHat(Mhalo=Mhalo,zvir=zvir,fb=0.1551,mu=1.4)
-    RHO = th.get_rho_of_t_fn()
-    VMIX = get_Vmixfn_K08(RHO,Dt=Dt)
-    WISM = wISM_K05
-    PSI = lambda t: uSN
-    MUFN = get_mufn(VMIX,PSI)
+def hist_chemgrid(chemarr,bins,elemindex=None):
+    if elemindex==None:
+        assert len(chemarr.shape)==2
+        kmax = chemarr.shape[1]
+    else:
+        assert len(chemarr.shape)==3,'[SN,elem,k]'
+        assert (elemindex >= 0) and (elemindex < chemarr.shape[2])
+        kmax = chemarr.shape[2]
 
-    with warnings.catch_warnings():
-        warnings.simplefilter('ignore') #ck gives a convergence warning which isn't important
-        ck = calc_ck(kmax,WISM,MUFN,PSI)
+    histlist = []
     for k in range(kmax):
-        chemarr[:,:,k] *= ck[k]
-    chemarr = np.sum(chemarr,2)
-    if elemnames != None:
-        chemarr = convert_to_solar(elemnames,chemarr,verbose)
-        return chemarr,ck
+        if elemindex==None:
+            h,x = np.histogram(chemarr[:,k],bins=bins)
+        else:
+            h,x = np.histogram(chemarr[:,elemindex,k],bins=bins)
+        histlist.append(h)
+    return x,histlist
+
+def cumweight_list(mylist,ck,eps=10**-8):
+    kmax = len(mylist)
+    assert len(ck)==kmax
+    myarr = np.array(mylist)
+    #with warnings.catch_warnings():
+    #    warnings.simplefilter('ignore') #ck gives a convergence warning which isn't important
+    #ck = calc_ck(kmax,WISM,MUFN,PSI,tmin=tmin,tmax=tmax,wISM2_0=wISM2_0)
+    weightedlist = []
+    for thiskmax in range(kmax):
+        thisck = ck[0:thiskmax]; thisck = thisck/np.sum(thisck)
+        assert np.sum(thisck)-1 < eps
+        thislist = np.transpose(myarr[0:thiskmax,:])
+        weightedlist.append(np.dot(thislist,thisck))
+    return weightedlist
 
 def convert_to_solar(elemnames,chemarr,verbose=False):
+    assert len(elemnames)==chemarr.shape[1]
     chemarr = np.log10(chemarr)
     asplund09ZHsun = yields.map_elemnames_to_asplund09(elemnames)
-    for z in range(len(elemnames)):
-        chemarr[:,z] -= asplund09ZHsun[z]
-        if verbose: 
-            print "%s: min %3.2f max %3.2f" % (elemnames[z],np.min(chemarr[:,z]),np.max(chemarr[:,z]))
+    if len(chemarr.shape)==2: #single chemarr
+        for z in range(len(elemnames)):
+            chemarr[:,z] -= asplund09ZHsun[z]
+            if verbose: 
+                print "%s: min %3.2f max %3.2f" % (elemnames[z],np.min(chemarr[:,z]),np.max(chemarr[:,z]))
+    elif len(chemarr.shape)==3: #chemarr with multiple k
+        for k in range(chemarr.shape[2]):
+            for z in range(len(elemnames)):
+                chemarr[:,z,k] -= asplund09ZHsun[z]
+                if verbose: 
+                    print "%i %s: min %3.2f max %3.2f" % (k,elemnames[z],np.min(chemarr[:,z]),np.max(chemarr[:,z]))
     return chemarr
 
 def draw_from_distr(N,x,pdf,seed=None,eps=10**-10):
@@ -306,7 +348,64 @@ def draw_from_distr(N,x,pdf,seed=None,eps=10**-10):
     cdf[-1]=1
     return np.array(x[np.searchsorted(cdf,unifarr)])
 
-def calc_ck(kmax,wISM,mufn,SFR,tmin=0,tmax=1000):
+def calc_ck(kmax,wISM,mufn,SFR,tmin=0,tmax=1000,wISM2_0=None):
     """ normalized array of weights of how many SN enrich a star """
-    myarr =  [quad(lambda t: wISM(k,mufn(t))*SFR(t),tmin,tmax)[0] for k in range(1,kmax+1)]
+    if wISM2_0==None:
+        myarr =  [quad(lambda t: wISM(k,mufn(t))*SFR(t),tmin,tmax)[0] for k in range(1,kmax+1)]
+    else:
+        myarr =  [quad(lambda t: wISM(k,mufn(t))*wISM2_0(t)*SFR(t),tmin,tmax)[0] for k in range(1,kmax+1)]
     return np.array(myarr)/np.sum(myarr)
+
+def compute_cfrac(C,Fe,CFe_crit=0.75,bins=None,
+                  returnallinfo=False):
+    Nstar=len(C)
+    assert Nstar == len(Fe)
+    CFe = C - Fe
+    
+    if bins==None:
+        binwidth = 0.2
+        binmin = np.ceil(np.min(Fe))
+        while binmin > np.min(Fe):
+            binmin -= binwidth
+        binmax = np.floor(np.max(Fe))
+        while binmin > np.min(Fe):
+            binmax += binwidth
+        bins = np.arange(binmin,binmax+binwidth/2.,binwidth)
+    binplot = (bins[0:-1] + bins[1:])/2.0
+    assert len(binplot) == len(bins)-1
+    fracarr = np.zeros(len(binplot))
+    NCarr = np.zeros(len(binplot))
+    NTarr = np.zeros(len(binplot))
+
+    Crich = CFe > CFe_crit
+    ii = np.digitize(Fe,bins)
+    for ibin in xrange(1,len(binplot)+1):
+        starsinbin = (ii == ibin)
+        NCarr[ibin-1] = np.sum(Crich[starsinbin])
+        NTarr[ibin-1] = np.sum(starsinbin)
+    fracarr = NCarr/NTarr
+    errarr  = [np.abs(fracarr - err/NTarr) for err in scipy.stats.poisson.interval(0.95,NCarr)]
+
+    if returnallinfo:
+        return binplot,fracarr,errarr,NCarr,NTarr
+    else:
+        return binplot,fracarr,errarr
+
+def cfraclist_chemgrid(chemarr,FeHbins,
+                       iC=0,iFe=5,
+                       CFe_crit=0.75):
+    kmax = chemarr.shape[2]
+    minFe = np.min(chemarr[:,iFe,:]); minbin = FeH[0]
+    maxFe = np.max(chemarr[:,iFe,:]); maxbin = FeH[-1]
+    if minFe < minbin:
+        print "Warning: lowest Fe %3.2f, lowest bin %3.2f" % (minFe,minbin)
+    if maxFe > maxbin:
+        print "Warning: highest Fe %3.2f, highest bin %3.2f" % (maxFe,maxbin)
+
+    cfraclist = []
+    for k in range(kmax):
+        FeH,Cfrac,CfracErr = compute_cfrac(chemarr[:,iC,k],chemarr[:,iFe,k],
+                                           CFe_crit=CFe_crit,bins=FeHbins)
+        cfraclist.append(Cfrac)
+    return FeH,cfraclist
+
