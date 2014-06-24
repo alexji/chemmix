@@ -10,7 +10,16 @@ from tophat import TopHat
 if __name__=="__main__":
     RHOP2 = False
 
-    filenames = ['minihalo','atomiccoolinghalo']
+    Mhalo = 10**8; fb = 0.1551; Mmax = Mhalo*fb
+    #filenames = ['atomiccoolinghalo','minihalo']
+    #filenames = ['atomiccoolinghalo','minihalo4']
+    #filenames = ['atomiccoolinghalo','k08']
+    #filenames = ['atomiccoolinghalo','atomiccoolinghalo4']
+    #filenames = ['atomiccoolinghalo','atomiccoolinghalolate']
+    #filenames = ['atomiccoolinghalo','atomiccoolinghalolate_lowvturb']
+    #filenames = ['atomiccoolinghalo','atomiccoolinghalo_lowmass']
+    #filenames = ['atomiccoolinghalolate_lowvturb','atomiccoolinghalo_lowmass']
+    filenames = ['k08','k084']
     lefttaillist = []; righttaillist = []
     q1list = []; medlist = []; q3list = []
     karr = np.arange(1,21)
@@ -55,30 +64,32 @@ if __name__=="__main__":
         q1list.append(q1arr); medlist.append(medarr); q3list.append(q3arr)
     ax.set_xlim((0,21)); ax.set_xlabel(r'$k$')
     ax.set_yscale('log'); ax.set_ylabel(r'M$_{\rm mix}$ (q1,med,q3) $M_\odot$')
-    #ax.set_ylim((10**-2.5,10**8.5))
+    ax.set_ylim((10**4,10**8))
+    plt.plot([1,20],[Mmax,Mmax],'c:',lw=2)
+    plt.plot([1,20],[Mmax,Mmax],'c:',lw=2)
     plt.legend(loc='best')
-    plt.savefig('PLOTS/fMk_boxplots.png',bbox_inches='tight')
+    plt.savefig('PLOTS/fMk_boxplots_'+filenames[0]+'_'+filenames[1]+'.png',bbox_inches='tight')
 
 
-    f1 = h5py.File(karlsson.get_mmixgrid_filename('minihalo'),'r')
-    tarr1 = np.array(f1['tarr']); f1.close()
-    Mhalo,zvir,vt,lt,nsn,trec = karlsson.params_minihalo()
-    th1 = TopHat(Mhalo=Mhalo,zvir=zvir)
-    rho1 = th1.get_rho_of_t_fn()
-
-    f2 = h5py.File(karlsson.get_mmixgrid_filename('atomiccoolinghalo'),'r')
-    tarr2 = np.array(f2['tarr']); f2.close()
-    Mhalo,zvir,vt,lt,nsn,trec = karlsson.params_atomiccoolinghalo()
-    th2 = TopHat(Mhalo=Mhalo,zvir=zvir)
-    rho2 = th2.get_rho_of_t_fn()
-
-    fig2 = plt.figure()
-    ax2 = fig2.gca()
+    #f1 = h5py.File(karlsson.get_mmixgrid_filename('minihalo'),'r')
+    #tarr1 = np.array(f1['tarr']); f1.close()
+    #Mhalo,zvir,vt,lt,nsn,trec = karlsson.params_minihalo()
+    #th1 = TopHat(Mhalo=Mhalo,zvir=zvir)
+    #rho1 = th1.get_rho_of_t_fn()
     
-    ax2.plot(tarr1,rho1(tarr1),'k',lw=2)
-    ax2.plot(tarr2,rho2(tarr2),'r',lw=1)
-    ax2.set_xscale('log')
-    ax2.set_yscale('log')
-    plt.savefig('PLOTS/tophat.png',bbox_inches='tight')
+    #f2 = h5py.File(karlsson.get_mmixgrid_filename('atomiccoolinghalo'),'r')
+    #tarr2 = np.array(f2['tarr']); f2.close()
+    #Mhalo,zvir,vt,lt,nsn,trec = karlsson.params_atomiccoolinghalo()
+    #th2 = TopHat(Mhalo=Mhalo,zvir=zvir)
+    #rho2 = th2.get_rho_of_t_fn()
+    
+    #fig2 = plt.figure()
+    #ax2 = fig2.gca()
+    
+    #ax2.plot(tarr1,rho1(tarr1),'k',lw=2)
+    #ax2.plot(tarr2,rho2(tarr2),'r',lw=1)
+    #ax2.set_xscale('log')
+    #ax2.set_yscale('log')
+    #plt.savefig('PLOTS/tophat.png',bbox_inches='tight')
 
     plt.show()

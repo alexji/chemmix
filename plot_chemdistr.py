@@ -112,9 +112,13 @@ if __name__=="__main__":
 #    filename = 'CHEMGRIDS/minihalo4_chemgrid_I05T07_p0.5.hdf5'
 #    plotprefix = 'minihalo4_I05T07_p0.5'
 #    paramfn = karlsson.params_minihalo
-    filename = 'CHEMGRIDS/atomiccoolinghalo4_chemgrid_I05T07_p0.5.hdf5'
-    plotprefix = 'atomiccoolinghalo4_I05T07_p0.5'
-    paramfn = karlsson.params_atomiccoolinghalo
+#    filename = 'CHEMGRIDS/atomiccoolinghalo4_chemgrid_I05T07_p0.5.hdf5'
+#    plotprefix = 'atomiccoolinghalo4_I05T07_p0.5'
+#    paramfn = karlsson.params_atomiccoolinghalo
+
+    filename = 'CHEMGRIDS/atomiccoolinghalo_lowmass_chemgrid_I05N06_p0.5Mmax.hdf5'
+    plotprefix = 'atomiccoolinghalo_lowmass_I05N06_p0.5'
+    paramfn = karlsson.params_atomiccoolinghalo_lowmass
 
     parser = OptionParser()
     parser.add_option('-k','--kmax',

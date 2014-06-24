@@ -2,7 +2,6 @@ import numpy as np
 import pylab as plt
 import h5py
 from optparse import OptionParser
-import scipy.stats
 
 import karlsson
 from tophat import TopHat
