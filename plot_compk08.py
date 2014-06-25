@@ -20,13 +20,14 @@ if __name__=="__main__":
     label = 'I05N06_p0.5Mmax'
     print "Using",label
     file1 = 'CHEMGRIDS/atomiccoolinghalo_chemgrid_'+label+'.hdf5'
-    file2 = 'CHEMGRIDS/k08_chemgrid_'+label+'.hdf5'
+    #file2 = 'CHEMGRIDS/k08_chemgrid_'+label+'.hdf5'
+    file2 = 'CHEMGRIDS/k08_wII_chemgrid_'+label+'.hdf5' #wII
     paramfn1 = karlsson.params_atomiccoolinghalo
     paramfn2 = karlsson.params_atomiccoolinghalo
-    column1 = 'ACH'; column2 = 'ACH with K08'
+    column1 = 'ACH'; column2 = 'ACH with K08wII' #wII
     columnnames = [column1,column2]
     logMdil=5
-    label += '_compk08'
+    label += '_compk08_wII' #wII
     numrows = 7; numcols = 2
     klist = np.arange(14)+1 #code assumes contiguous klist starting at 1
     kmax = klist[-1]

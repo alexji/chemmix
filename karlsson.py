@@ -269,15 +269,13 @@ def get_DMlist(Mbins,tarr,tauarr,Mmixgrid,numprocs=1):
     return DMlist
 
 def calc_fMk(k,Mbins,DMlist,Vmix,WISM,mufn,SFR,normalize=True,
-             SFRlms=None):#, WISMlms_0=None):
+             SFRlms=None, WISM2_0=None):
     assert k > 0
     nbins = len(Mbins)-1
     assert nbins == len(DMlist)
 
     if SFRlms == None:
         SFRlms = SFR
-    #if WISMlms_0 == None:
-    #    WISMlms_0 = lambda mu: 1. if type(mu)==float else 1+np.zeros(len(mu))
 
     fMk = np.zeros(nbins)
     for i,DM in enumerate(DMlist):
@@ -286,11 +284,11 @@ def calc_fMk(k,Mbins,DMlist,Vmix,WISM,mufn,SFR,normalize=True,
         Vmixarr = Vmix(tau)
         muarr = mufn(t)
         WISMarr = WISM(k-1,muarr)
-        WISMlmsarr = WISMlms_0(muarr)
+        if WISM2_0 != None: #ugh note WISM uses mu, this uses t
+            WISMarr = WISMarr * WISM2_0(t)
         sfr1 = SFR(t-tau)
         sfr2 = SFRlms(t)
 
-        #fMk[i] = np.sum(dt*dtau*Vmixarr*WISMarr*WISMlmsarr*sfr1*sfr2)
         fMk[i] = np.sum(dt*dtau*Vmixarr*WISMarr*sfr1*sfr2)
     if normalize:
         fMk = fMk/np.sum(fMk)
@@ -299,7 +297,7 @@ def calc_fMk(k,Mbins,DMlist,Vmix,WISM,mufn,SFR,normalize=True,
 def calc_fMkkp(k,kp,Mbins,DMlist,VMIX,
                WISMII,MUII,UII,
                WISMIII,MUIII,UIII,
-               normalize=True)
+               normalize=True):
     assert k > 0 and kp > 0 and kp <= k
     nbins = len(Mbins)-1
     assert nbins == len(DMlist)

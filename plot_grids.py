@@ -61,36 +61,36 @@ def plot_grid(label,KMAXFLAG,ADDWIIFLAG,MDIL,numrows,numcols,show=False):
     ##klist = np.arange(1,11)
     #klist = np.arange(6,16)
 
-    file1 = 'CHEMGRIDS/atomiccoolinghalolate_lowvturb_chemgrid_'+label+'.hdf5'
-    file2 = 'CHEMGRIDS/atomiccoolinghalo_lowmass_chemgrid_'+label+'.hdf5'
-    paramfn1 = karlsson.params_atomiccoolinghalolate_lowvturb
-    paramfn2 = karlsson.params_atomiccoolinghalo_lowmass
-    WISM1 = karlsson.wISM_K05
-    WISM2 = karlsson.wISM_K05
-    Mhalo,zvir,vturb,lturb,nSN,trecovery = paramfn1()
-    Dt1,uSN1 = karlsson.get_Dt_uSN(vturb,lturb,nSN,trecovery)
-    Mhalo,zvir,vturb,lturb,nSN,trecovery = paramfn2()
-    Dt2,uSN2 = karlsson.get_Dt_uSN(vturb,lturb,nSN,trecovery)
-    PSI1 = lambda t: uSN1; PSI2 = lambda t: uSN2
-    column1 = 'ACH late lowvturb (1/10)'
-    column2 = 'ACH lowmass (7.4)'
-    label += '_achlowDt'
-
-#    file1 = 'CHEMGRIDS/atomiccoolinghalo_chemgrid_'+label+'.hdf5'
-#    file2 = 'CHEMGRIDS/k08_chemgrid_'+label+'.hdf5'
-#    paramfn1 = karlsson.params_atomiccoolinghalo
-#    paramfn2 = karlsson.params_atomiccoolinghalo
+#    file1 = 'CHEMGRIDS/atomiccoolinghalolate_lowvturb_chemgrid_'+label+'.hdf5'
+#    file2 = 'CHEMGRIDS/atomiccoolinghalo_lowmass_chemgrid_'+label+'.hdf5'
+#    paramfn1 = karlsson.params_atomiccoolinghalolate_lowvturb
+#    paramfn2 = karlsson.params_atomiccoolinghalo_lowmass
 #    WISM1 = karlsson.wISM_K05
-#    WISM2 = karlsson.wISM_III
+#    WISM2 = karlsson.wISM_K05
 #    Mhalo,zvir,vturb,lturb,nSN,trecovery = paramfn1()
 #    Dt1,uSN1 = karlsson.get_Dt_uSN(vturb,lturb,nSN,trecovery)
 #    Mhalo,zvir,vturb,lturb,nSN,trecovery = paramfn2()
 #    Dt2,uSN2 = karlsson.get_Dt_uSN(vturb,lturb,nSN,trecovery)
-#    PSI1 = lambda t: uSN1
-#    PSI2 = sfu.loaduIIfn('atomiccoolinghalo')
-#    column1 = 'ACH'
-#    column2 = 'ACH with K08'
-#    label += '_compk08'
+#    PSI1 = lambda t: uSN1; PSI2 = lambda t: uSN2
+#    column1 = 'ACH late lowvturb (1/10)'
+#    column2 = 'ACH lowmass (7.4)'
+#    label += '_achlowDt'
+
+    file1 = 'CHEMGRIDS/atomiccoolinghalo_chemgrid_'+label+'.hdf5'
+    file2 = 'CHEMGRIDS/k08_chemgrid_'+label+'.hdf5'
+    paramfn1 = karlsson.params_atomiccoolinghalo
+    paramfn2 = karlsson.params_atomiccoolinghalo
+    WISM1 = karlsson.wISM_K05
+    WISM2 = karlsson.wISM_III
+    Mhalo,zvir,vturb,lturb,nSN,trecovery = paramfn1()
+    Dt1,uSN1 = karlsson.get_Dt_uSN(vturb,lturb,nSN,trecovery)
+    Mhalo,zvir,vturb,lturb,nSN,trecovery = paramfn2()
+    Dt2,uSN2 = karlsson.get_Dt_uSN(vturb,lturb,nSN,trecovery)
+    PSI1 = lambda t: uSN1
+    PSI2 = sfu.loaduIIfn('atomiccoolinghalo')
+    column1 = 'ACH'
+    column2 = 'ACH with K08'
+    label += '_compk08'
 
     if KMAXFLAG:
         klist = np.arange(6,16)
@@ -260,5 +260,5 @@ if __name__=="__main__":
         plot_grid(label,False,False,MDIL,numrows,numcols)
     for label in labelarr:
         plot_grid(label,True,False,MDIL,numrows,numcols)
-    #for label in labelarr:
-    #    plot_grid(label,True,True,MDIL,numrows,numcols)
+    for label in labelarr:
+        plot_grid(label,True,True,MDIL,numrows,numcols)

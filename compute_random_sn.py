@@ -81,7 +81,7 @@ def run_compute_random_sn(filename,sntypepdf,yieldobj,kmax,
 if __name__=="__main__":
     reload(yields)
     RHOP2 = False
-    NUMPROCS = 15
+    NUMPROCS = 20
     fb = 0.1551
 
     i05n06 = yields.I05N06yields()
@@ -114,7 +114,11 @@ if __name__=="__main__":
     #                      postfix='_p0.1Mmax',Nstars=10**6,numprocs=NUMPROCS)
     #run_compute_random_sn('atomiccoolinghalo_lowmass',sntypepdf,i05n06,15,Mmax=fb*10**8,
     #                      postfix='_p0.1Mmax',Nstars=10**6,numprocs=NUMPROCS)
-    run_compute_random_sn('k08',sntypepdf,i05n06,15,Mmax=fb*10**8,
+    #run_compute_random_sn('k08',sntypepdf,i05n06,15,Mmax=fb*10**8,
+    #                      postfix='_p0.1Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('k084',sntypepdf,i05n06,15,Mmax=fb*10**8,
+    #                      postfix='_p0.1Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    run_compute_random_sn('k08_wII',sntypepdf,i05n06,15,Mmax=fb*10**8,
                           postfix='_p0.1Mmax',Nstars=10**6,numprocs=NUMPROCS)
 
     p = 0.5; sntypepdf = np.array([p,1-p])
@@ -146,8 +150,12 @@ if __name__=="__main__":
     #                      postfix='_p0.5Mmax',Nstars=10**6,numprocs=NUMPROCS)
     #run_compute_random_sn('atomiccoolinghalo_lowmass',sntypepdf,i05n06,15,Mmax=fb*10**8,
     #                      postfix='_p0.5Mmax',Nstars=10**6,numprocs=NUMPROCS)
-    run_compute_random_sn('k08',sntypepdf,i05n06,15,Mmax=fb*10**8,
-                          postfix='__p0.5Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('k08',sntypepdf,i05n06,15,Mmax=fb*10**8,
+    #                      postfix='_p0.5Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('k084',sntypepdf,i05n06,15,Mmax=fb*10**8,
+    #                      postfix='_p0.5Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    run_compute_random_sn('k08_wII',sntypepdf,i05n06,15,Mmax=fb*10**8,
+                          postfix='_p0.5Mmax',Nstars=10**6,numprocs=NUMPROCS)
 
     p = 0.9; sntypepdf = np.array([p,1-p])
     #run_compute_random_sn('minihalo',sntypepdf,i05n06,10,
@@ -178,7 +186,11 @@ if __name__=="__main__":
     #                      postfix='_p0.9Mmax',Nstars=10**6,numprocs=NUMPROCS)
     #run_compute_random_sn('atomiccoolinghalo_lowmass',sntypepdf,i05n06,15,Mmax=fb*10**8,
     #                      postfix='_p0.9Mmax',Nstars=10**6,numprocs=NUMPROCS)
-    run_compute_random_sn('k08',sntypepdf,i05n06,15,Mmax=fb*10**8,
+    #run_compute_random_sn('k08',sntypepdf,i05n06,15,Mmax=fb*10**8,
+    #                      postfix='_p0.9Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('k084',sntypepdf,i05n06,15,Mmax=fb*10**8,
+    #                      postfix='_p0.9Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    run_compute_random_sn('k08_wII',sntypepdf,i05n06,15,Mmax=fb*10**8,
                           postfix='_p0.9Mmax',Nstars=10**6,numprocs=NUMPROCS)
     
     p = 0.95; sntypepdf = np.array([p,1-p])
@@ -192,7 +204,11 @@ if __name__=="__main__":
     #                      postfix='_p0.95Mmax',Nstars=10**6,numprocs=NUMPROCS)
     #run_compute_random_sn('atomiccoolinghalo_lowmass',sntypepdf,i05n06,15,Mmax=fb*10**8,
     #                      postfix='_p0.95Mmax',Nstars=10**6,numprocs=NUMPROCS)
-    run_compute_random_sn('k08',sntypepdf,i05n06,15,Mmax=fb*10**8,
+    #run_compute_random_sn('k08',sntypepdf,i05n06,15,Mmax=fb*10**8,
+    #                      postfix='_p0.95Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('k084',sntypepdf,i05n06,15,Mmax=fb*10**8,
+    #                      postfix='_p0.95Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    run_compute_random_sn('k08_wII',sntypepdf,i05n06,15,Mmax=fb*10**8,
                           postfix='_p0.95Mmax',Nstars=10**6,numprocs=NUMPROCS)
 
     p = 0.99; sntypepdf = np.array([p,1-p])
@@ -206,8 +222,8 @@ if __name__=="__main__":
     #                      postfix='_p0.99Mmax',Nstars=10**6,numprocs=NUMPROCS)
     #run_compute_random_sn('atomiccoolinghalo_lowmass',sntypepdf,i05n06,15,Mmax=fb*10**8,
     #                      postfix='_p0.99Mmax',Nstars=10**6,numprocs=NUMPROCS)
-    run_compute_random_sn('k08',sntypepdf,i05n06,15,Mmax=fb*10**8,
-                          postfix='_p0.99Mmax',Nstars=10**6,numprocs=NUMPROCS)
+    #run_compute_random_sn('k08',sntypepdf,i05n06,15,Mmax=fb*10**8,
+    #                      postfix='_p0.99Mmax',Nstars=10**6,numprocs=NUMPROCS)
 
     #n06y = yields.nomoto06interpyields()
     #Nsntypepdf = relative_imf(n06y.massarr,2.35,norm=True) #salpeter imf

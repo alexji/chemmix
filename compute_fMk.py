@@ -7,7 +7,11 @@ from optparse import OptionParser
 
 from tophat import TopHat
 
-def run_compute_fMk(filename,logMmin,logMmax,logdM,Mhalo,zvir,vturb,lturb,nSN,trecovery,logMdil,rhop2=False,kmin=1,kmax=20,saveplot=False,numprocs=1,k08=False):
+def run_compute_fMk(filename,logMmin,logMmax,logdM,Mhalo,zvir,vturb,lturb,nSN,trecovery,logMdil,
+                    rhop2=False,kmin=1,kmax=20,saveplot=False,numprocs=1,
+                    k08=False,ADDWIIFLAG=False,
+                    DOUBLEFLAG=False,TENFLAG=False,TENTHFLAG=False,
+                    DOUBIIIFLAG=False,TENIIIFLAG=False,TENTHIIIFLAG=False):
     """
     Assume a TopHat density function
     Mhalo: Msun
@@ -44,11 +48,30 @@ def run_compute_fMk(filename,logMmin,logMmax,logdM,Mhalo,zvir,vturb,lturb,nSN,tr
         filename = 'k08'
         if logMdil != 5: filename += str(logMdil)
         WISM = karlsson.wISM_III
-        PSI    = sfu.loaduIIIfn('atomiccoolinghalo')
-        PSIlms = sfu.loaduIIfn('atomiccoolinghalo')
-        MUFN   = sfu.loadmuIIIfn('atomiccoolinghalo')
-        MUFNlms= sfu.loadmuIIfn('atomiccoolinghalo')
-        #WISMlms_0= lambda mu: karlsson.wISM_K05(0,mu) #e^-mu
+        sfulabel = 'atomiccoolinghalo'
+        if DOUBLEFLAG: 
+            sfulabel += 'double'; filename += 'double'
+        elif TENFLAG:   
+            sfulabel += 'ten';    filename += 'ten'
+        elif TENTHFLAG: 
+            sfulabel += 'tenth';  filename += 'tenth'
+        elif DOUBIIIFLAG: 
+            sfulabel += 'doubIII'; filename += 'doubIII'
+        elif TENIIIFLAG:   
+            sfulabel += 'tenIII';  filename += 'tenIII'
+        elif TENTHIIIFLAG: 
+            sfulabel += 'tenthIII';filename += 'tenthIII'
+        if logMdil != 5: sfulabel += str(logMdil)
+        print "sfulabel:",sfulabel
+        PSI    = sfu.loaduIIIfn(sfulabel)
+        PSIlms = sfu.loaduIIfn(sfulabel)
+        MUFN   = sfu.loadmuIIIfn(sfulabel)
+        MUFNlms= sfu.loadmuIIfn(sfulabel)
+        if ADDWIIFLAG:
+            WISM2_0 = lambda t: karlsson.wISM_K05(0,MUFNlms(t)) #e^-mu
+            filename += "_wII"
+        else:
+            WISM2_0 = None
         #MUFN    = karlsson.get_mufn(VMIX,PSI)
         #MUFNlms = karlsson.get_mufn(VMIX,PSIlms)
 
@@ -74,7 +97,7 @@ def run_compute_fMk(filename,logMmin,logMmax,logdM,Mhalo,zvir,vturb,lturb,nSN,tr
                                     SFRlms=RHO)
         elif k08:
             fMk = karlsson.calc_fMk(k,Mbins,DMlist,VMIX,WISM,MUFN,PSI,
-                                    SFRlms=PSIlms)#,WISMlms_0=WISMlms_0)
+                                    SFRlms=PSIlms,WISM2_0=WISM2_0)
         else:
             fMk = karlsson.calc_fMk(k,Mbins,DMlist,VMIX,WISM,MUFN,PSI)
         print "calc_fM",k,time.time()-start,len(fMk)
@@ -92,6 +115,14 @@ def run_compute_fMk(filename,logMmin,logMmax,logdM,Mhalo,zvir,vturb,lturb,nSN,tr
 if __name__=="__main__":
     parser = OptionParser()
     parser.add_option("--k08",action='store_true',dest='k08',default=False)
+    parser.add_option("--WIIFLAG",action='store_true',dest='WIIFLAG',default=False)
+    parser.add_option("--double",action='store_true',dest='double',default=False)
+    parser.add_option("--doubIII",action='store_true',dest='doubIII',default=False)
+    parser.add_option("--ten",action='store_true',dest='ten',default=False)
+    parser.add_option("--tenIII",action='store_true',dest='tenIII',default=False)
+    parser.add_option("--tenth",action='store_true',dest='tenth',default=False)
+    parser.add_option("--tenthIII",action='store_true',dest='tenthIII',default=False)
+
     parser.add_option("--minihalo",action='store_true',dest='minihalo',default=False)
     parser.add_option("--atomiccoolinghalo",action='store_true',dest='atomiccoolinghalo',default=False)
     parser.add_option("--atomiccoolinghaloearly",action='store_true',dest='atomiccoolinghaloearly',default=False)
@@ -104,6 +135,7 @@ if __name__=="__main__":
     parser.add_option("--numprocs","-j",action='store',type='int',dest='numprocs',default=1)
     options,args = parser.parse_args()
     logMdil = options.logMdil
+    WIIFLAG = options.WIIFLAG
 
     ## Compute Karlsson
     if options.k08:
@@ -114,7 +146,9 @@ if __name__=="__main__":
         run_compute_fMk(filename,0,8,.01,
                         Mhalo,zvir,vturb,lturb,-1,-1,logMdil,
                         options.rhop2,saveplot=options.saveplot,numprocs=options.numprocs,
-                        k08=True)
+                        k08=True,ADDWIIFLAG=WIIFLAG,
+                        DOUBLEFLAG=options.double,TENFLAG=options.ten,TENTHFLAG=options.tenth,
+                        DOUBIIIFLAG=options.doubIII,TENIIIFLAG=options.tenIII,TENTHIIIFLAG=options.tenthIII)
 
     ## minihalo
     if options.minihalo:

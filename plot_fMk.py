@@ -19,12 +19,17 @@ if __name__=="__main__":
     #filenames = ['atomiccoolinghalo','atomiccoolinghalolate_lowvturb']
     #filenames = ['atomiccoolinghalo','atomiccoolinghalo_lowmass']
     #filenames = ['atomiccoolinghalolate_lowvturb','atomiccoolinghalo_lowmass']
-    filenames = ['k08','k084']
+    #filenames = ['k08','k08_wII','k084_wII']
+    #filenames = ['k08','k08_wII','k08double_wII']
+    #filenames = ['k08','k08_wII','k08double','k08double_wII']
+    #filenames = ['k08','k08_wII','k08doubIII','k08doubIII_wII']
+    #filenames = ['k08_wII','k08ten_wII','k08double_wII','k08tenth_wII']
+    filenames = ['k08_wII','k08tenIII_wII','k08doubIII_wII','k08tenthIII_wII']
     lefttaillist = []; righttaillist = []
     q1list = []; medlist = []; q3list = []
     karr = np.arange(1,21)
-    offset = [0,.1]
-    colors = ['k','r']
+    offset = [0,.1,.15,.2,.25,.3]
+    colors = ['k','r','g','b','p','c']
 
     fig = plt.figure(); ax = fig.gca()
     for i,filename in enumerate(filenames):
@@ -68,7 +73,11 @@ if __name__=="__main__":
     plt.plot([1,20],[Mmax,Mmax],'c:',lw=2)
     plt.plot([1,20],[Mmax,Mmax],'c:',lw=2)
     plt.legend(loc='best')
-    plt.savefig('PLOTS/fMk_boxplots_'+filenames[0]+'_'+filenames[1]+'.png',bbox_inches='tight')
+    plotname = 'PLOTS/fMk_boxplots'
+    for filename in filenames:
+        plotname += '_'+filename
+    plotname += '.png'
+    plt.savefig(plotname,bbox_inches='tight')
 
 
     #f1 = h5py.File(karlsson.get_mmixgrid_filename('minihalo'),'r')

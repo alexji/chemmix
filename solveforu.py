@@ -4,6 +4,19 @@ from tophat import TopHat
 import karlsson
 from optparse import OptionParser
 
+def plot_sfu(label):
+    import pylab as plt
+    fIII,tarr,uIII  = loaduIIIfn(label,retarrays=True)
+    fII,tarr,uII    = loaduIIfn(label,retarrays=True)
+    fIII,tarr,muIII = loadmuIIIfn(label,retarrays=True)
+    fII,tarr,muII   = loadmuIIfn(label,retarrays=True)
+    f,((ax1,ax2),(ax3,ax4)) = plt.subplots(2,2,sharex=True)
+    ax1.plot(tarr,uIII); ax1.set_title(label+' uIII')
+    ax2.plot(tarr,uII);  ax2.set_title(label+' uII')
+    ax3.plot(tarr,muIII); ax3.set_title('muIII')
+    ax4.plot(tarr,muII);  ax4.set_title('muII')
+    plt.show()
+
 def saveuIIdata(label,Vmixfn,th,u0,tthresh=110):
     uIIIfn,tarr,uarr = loaduIIIfn(label,retarrays=True)
     muIIIfn = loadmuIIIfn(label)#karlsson.get_mufn(Vmixfn,uIIIfn,tarr=tarr)
@@ -137,9 +150,16 @@ if __name__=="__main__":
     parser = OptionParser()
     parser.add_option('--uII', action='store_true',dest='uII', default=False)
     parser.add_option('--uIII',action='store_true',dest='uIII',default=False)
+    parser.add_option('--double',action='store_true',dest='double',default=False)
+    parser.add_option('--doubIII',action='store_true',dest='doubIII',default=False)
+    parser.add_option('--ten',action='store_true',dest='ten',default=False)
+    parser.add_option('--tenIII',action='store_true',dest='tenIII',default=False)
+    parser.add_option('--tenth',action='store_true',dest='tenth',default=False)
+    parser.add_option('--tenthIII',action='store_true',dest='tenthIII',default=False)
+
     parser.add_option('--tres',action='store',type='float',dest='tres',
                       default=.1)
-    parser.add_option('--logmdil',action='store',type='float',dest='logMdil',
+    parser.add_option('--logmdil',action='store',type='int',dest='logMdil',
                       default=5)
     options,args = parser.parse_args()
     
@@ -147,22 +167,36 @@ if __name__=="__main__":
     Dt,uSN = karlsson.get_Dt_uSN(vturb,lturb,0,1)
 
     tarr = np.arange(.01,1000,options.tres)
+
+    label = 'atomiccoolinghalo'
+    if options.double: label = 'atomiccoolinghalodouble'
+    elif options.doubIII: label = 'atomiccoolinghalodoubIII'
+    elif options.ten: label = 'atomiccoolinghaloten'
+    elif options.tenIII: label = 'atomiccoolinghalotenIII'
+    elif options.tenth: label = 'atomiccoolinghalotenth'
+    elif options.tenthIII: label = 'atomiccoolinghalotenthIII'
+    if options.logMdil!=5: label += str(options.logMdil)
+
+    print label
     if options.uIII:
         tthresh=100
         u0 = .04; th = TopHat(Mhalo=Mhalo,zvir=zvir,fb=0.1551,mu=1.4)
+        if options.double: u0 = u0*2
+        elif options.doubIII: u0 = u0*2
+        elif options.tenIII: u0 = u0*10
+        elif options.ten: u0 = u0*10
+        elif options.tenth: u0 = u0*0.1
+        elif options.tenthIII: u0 = u0*0.1
         Vmixfn = karlsson.get_Vmixfn_K08(th.get_rho_of_t_fn(),Dt=Dt,Mdil=10**options.logMdil)
         numsf = np.sum(tarr>tthresh); numskip=len(tarr)-numsf
         u_init = np.concatenate((np.zeros(numskip),np.logspace(-2,-8,numsf)))
-        if options.logMdil==5:
-            saveuIIIdata('atomiccoolinghalo',tarr,u_init,Vmixfn,th,u0,tthresh=tthresh)
-        else:
-            saveuIIIdata('atomiccoolinghalo'+str(options.logMdil),tarr,u_init,Vmixfn,th,u0,tthresh=tthresh)
+        saveuIIIdata(label,tarr,u_init,Vmixfn,th,u0,tthresh=tthresh)
     
     if options.uII:
         tthresh=110
         u0 = .4; th = TopHat(Mhalo=Mhalo,zvir=zvir,fb=0.1551,mu=1.4)
+        if options.double: u0 = u0*2
+        elif options.ten: u0 = u0*10
+        elif options.tenth: u0 = u0*0.1
         Vmixfn = karlsson.get_Vmixfn_K08(th.get_rho_of_t_fn(),Dt=Dt,Mdil=10**options.logMdil)
-        if options.logMdil==5:
-            saveuIIdata('atomiccoolinghalo',Vmixfn,th,u0,tthresh=tthresh)
-        else:
-            saveuIIdata('atomiccoolinghalo'+str(options.logMdil),Vmixfn,th,u0,tthresh=tthresh)
+        saveuIIdata(label,Vmixfn,th,u0,tthresh=tthresh)
