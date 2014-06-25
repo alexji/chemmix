@@ -4,7 +4,7 @@ from tophat import TopHat
 import karlsson
 from optparse import OptionParser
 
-def plot_sfu(label):
+def plot_sfu(label,showplot=True):
     import pylab as plt
     fIII,tarr,uIII  = loaduIIIfn(label,retarrays=True)
     fII,tarr,uII    = loaduIIfn(label,retarrays=True)
@@ -15,7 +15,8 @@ def plot_sfu(label):
     ax2.plot(tarr,uII);  ax2.set_title(label+' uII')
     ax3.plot(tarr,muIII); ax3.set_title('muIII')
     ax4.plot(tarr,muII);  ax4.set_title('muII')
-    plt.show()
+    plt.savefig('PLOTS/umugrid_'+label+'.png')
+    if showplot: plt.show()
 
 def saveuIIdata(label,Vmixfn,th,u0,tthresh=110):
     uIIIfn,tarr,uarr = loaduIIIfn(label,retarrays=True)
@@ -148,6 +149,8 @@ def test():
 if __name__=="__main__":
     #test()
     parser = OptionParser()
+    parser.add_option('--plotmany', action='store_true',dest='plotmany', default=False)
+
     parser.add_option('--uII', action='store_true',dest='uII', default=False)
     parser.add_option('--uIII',action='store_true',dest='uIII',default=False)
     parser.add_option('--double',action='store_true',dest='double',default=False)
@@ -200,3 +203,7 @@ if __name__=="__main__":
         elif options.tenth: u0 = u0*0.1
         Vmixfn = karlsson.get_Vmixfn_K08(th.get_rho_of_t_fn(),Dt=Dt,Mdil=10**options.logMdil)
         saveuIIdata(label,Vmixfn,th,u0,tthresh=tthresh)
+    
+    if options.plotmany:
+        for suffix in ['','double','doubIII','ten','tenIII','tenth','tenthIII']:
+            plot_sfu('atomiccoolinghalo'+suffix,showplot=False)
