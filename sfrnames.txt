@@ -1,0 +1,3 @@
+fidTS300
+fidTS500
+fidTS1000
