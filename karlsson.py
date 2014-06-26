@@ -38,6 +38,38 @@ def get_environment_fns(paramfn,logMdil=5,verbose=False):
     VMIX = get_Vmixfn_K08(RHO,Dt=Dt,Mdil=10**logMdil)
     return th,RHO,VMIX
 
+def envparams(envname):
+    if envname=='atomiccoolinghalo':
+        Mhalo = 10**8; zvir = 10
+        nSN = 10; trecovery = 300
+        logMdil=5
+    elif envname=='atomiccoolinghalo4':
+        Mhalo = 10**8; zvir = 10
+        nSN = 10; trecovery = 300
+        logMdil=4
+    elif envname=='atomiccoolinghalo_lowmass':
+        Mhalo = 10**7.4; zvir = 10
+        nSN = 10; trecovery = 300
+        logMdil=5
+    elif envname=='atomiccoolinghalo_lowmass4':
+        Mhalo = 10**7.4; zvir = 10
+        nSN = 10; trecovery = 300
+        logMdil=4
+    elif envname=='minihalo':
+        Mhalo = 10**6; zvir = 25
+        nSN = 2; trecovery = 10
+        logMdil=5
+    elif envname=='minihalo4':
+        Mhalo = 10**6; zvir = 25
+        nSN = 2; trecovery = 10
+        logMdil=4
+    else:
+        raise ValueError("invalid envname: "+envname)
+
+    th = TopHat(Mhalo=Mhalo,zvir=zvir)
+    lturb = th.Rvir/10.; vturb = th.vvir
+    return Mhalo,zvir,vturb,lturb,nSN,trecovery,logMdil
+
 def params_k08():
     #Mhalo/Msun, zvir, vturb/km/s, lturb/kpc
     Mhalo = 10**8; zvir = 10
@@ -93,11 +125,20 @@ def params_atomiccoolinghalo_lowmass():
     lturb = th.Rvir/10.; vturb = th.vvir
     return Mhalo, zvir, vturb, lturb, nSN, trecovery
 
+def get_mmixgrid_filename(envname,mmixgrid_foldername = "MMIXGRIDS"):
+    return mmixgrid_foldername+'/'+envname+'_mmixgrid.hdf5'
+def get_fMkkp_filename(envname,suffix,k,kp,mmixdistr_foldername = "MMIXDISTR"):
+    return mmixdistr_foldername+'/'+envname+'_'+suffix+'_fM'+str(k)+'_'+str(kp)+'.npy'
+def get_ckkp_filename(envname,suffix,mmixdistr_foldername = "MMIXDISTR"):
+    return mmixdistr_foldername+'/'+envname+'_'+suffix+'_ckkp.hdf5'
+def get_Mbinskkp_filename(envname,suffix,mmixdistr_foldername = "MMIXDISTR"):
+    return mmixdistr_foldername+'/'+envname+'_'+suffix+'_Mbins.npy'
+def get_Mplotkkp_filename(envname,suffix,mmixdistr_foldername = "MMIXDISTR"):
+    return mmixdistr_foldername+'/'+envname+'_'+suffix+'_Mplot.npy'
+
 def RHOP2f(filename,rhop2):
     if rhop2: return filename+'_rhop2'
     return filename
-def get_mmixgrid_filename(filename,mmixgrid_foldername = "MMIXGRIDS"):
-    return mmixgrid_foldername+'/'+filename+'_mmixgrid.hdf5'
 def get_fMk_filename(filename,k,rhop2=False,mmixdistr_foldername = "MMIXDISTR"):
     return mmixdistr_foldername+'/'+RHOP2f(filename,rhop2)+'_fM'+str(k)+'.npy'
 def get_Mbins_filename(filename,rhop2=False,mmixdistr_foldername = "MMIXDISTR"):

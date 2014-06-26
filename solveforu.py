@@ -3,6 +3,19 @@ from scipy import integrate,interpolate
 from tophat import TopHat
 import karlsson
 from optparse import OptionParser
+import util
+import time
+    
+def compute_umufns(envname,sfrname,tmin=.01,tmax=1000.,tres=.1):
+    th,Vmixfn = util.load_Vmix(envname,get_th=True)
+    label = util.get_sfrlabel(envname,sfrname)
+    u0II,u0III,ttII,ttIII,tstop = util.get_sfrparams(sfrname)
+    tarr = np.arange(tmin,tmax,tres)
+
+    numsf = np.sum(tarr>ttIII); numskip = len(tarr)-numsf
+    u_init = np.concatenate((np.zeros(numskip),np.logspace(-2,-8,numsf)))
+    saveuIIIdata(label,tarr,u_init,Vmixfn,th,u0III,tthresh=ttIII)
+    saveuIIdata(label,Vmixfn,th,u0II,tthresh=ttII)
 
 def plot_sfu(label,showplot=True):
     import pylab as plt
@@ -147,63 +160,66 @@ def test():
     plt.show()
 
 if __name__=="__main__":
-    #test()
     parser = OptionParser()
     parser.add_option('--plotmany', action='store_true',dest='plotmany', default=False)
 
-    parser.add_option('--uII', action='store_true',dest='uII', default=False)
-    parser.add_option('--uIII',action='store_true',dest='uIII',default=False)
-    parser.add_option('--double',action='store_true',dest='double',default=False)
-    parser.add_option('--doubIII',action='store_true',dest='doubIII',default=False)
-    parser.add_option('--ten',action='store_true',dest='ten',default=False)
-    parser.add_option('--tenIII',action='store_true',dest='tenIII',default=False)
-    parser.add_option('--tenth',action='store_true',dest='tenth',default=False)
-    parser.add_option('--tenthIII',action='store_true',dest='tenthIII',default=False)
+#    parser.add_option('--uII', action='store_true',dest='uII', default=False)
+#    parser.add_option('--uIII',action='store_true',dest='uIII',default=False)
+#    parser.add_option('--double',action='store_true',dest='double',default=False)
+#    parser.add_option('--doubIII',action='store_true',dest='doubIII',default=False)
+#    parser.add_option('--ten',action='store_true',dest='ten',default=False)
+#    parser.add_option('--tenIII',action='store_true',dest='tenIII',default=False)
+#    parser.add_option('--tenth',action='store_true',dest='tenth',default=False)
+#    parser.add_option('--tenthIII',action='store_true',dest='tenthIII',default=False)
 
     parser.add_option('--tres',action='store',type='float',dest='tres',
                       default=.1)
-    parser.add_option('--logmdil',action='store',type='int',dest='logMdil',
-                      default=5)
+#    parser.add_option('--logmdil',action='store',type='int',dest='logMdil',
+#                      default=5)
     options,args = parser.parse_args()
-    
-    Mhalo,zvir,vturb,lturb = karlsson.params_k08()
-    Dt,uSN = karlsson.get_Dt_uSN(vturb,lturb,0,1)
 
-    tarr = np.arange(.01,1000,options.tres)
+    print "Running solveforu"
+    print "envname:",args[0]
+    print "sfrname:",args[1]
 
-    label = 'atomiccoolinghalo'
-    if options.double: label = 'atomiccoolinghalodouble'
-    elif options.doubIII: label = 'atomiccoolinghalodoubIII'
-    elif options.ten: label = 'atomiccoolinghaloten'
-    elif options.tenIII: label = 'atomiccoolinghalotenIII'
-    elif options.tenth: label = 'atomiccoolinghalotenth'
-    elif options.tenthIII: label = 'atomiccoolinghalotenthIII'
-    if options.logMdil!=5: label += str(options.logMdil)
+    start = time.time()
+    compute_umufns(envname,sfrname,tres=options.tres)
+    print "Finished:",time.time()-start
 
-    print label
-    if options.uIII:
-        tthresh=100
-        u0 = .04; th = TopHat(Mhalo=Mhalo,zvir=zvir,fb=0.1551,mu=1.4)
-        if options.double: u0 = u0*2
-        elif options.doubIII: u0 = u0*2
-        elif options.tenIII: u0 = u0*10
-        elif options.ten: u0 = u0*10
-        elif options.tenth: u0 = u0*0.1
-        elif options.tenthIII: u0 = u0*0.1
-        Vmixfn = karlsson.get_Vmixfn_K08(th.get_rho_of_t_fn(),Dt=Dt,Mdil=10**options.logMdil)
-        numsf = np.sum(tarr>tthresh); numskip=len(tarr)-numsf
-        u_init = np.concatenate((np.zeros(numskip),np.logspace(-2,-8,numsf)))
-        saveuIIIdata(label,tarr,u_init,Vmixfn,th,u0,tthresh=tthresh)
-    
-    if options.uII:
-        tthresh=110
-        u0 = .4; th = TopHat(Mhalo=Mhalo,zvir=zvir,fb=0.1551,mu=1.4)
-        if options.double: u0 = u0*2
-        elif options.ten: u0 = u0*10
-        elif options.tenth: u0 = u0*0.1
-        Vmixfn = karlsson.get_Vmixfn_K08(th.get_rho_of_t_fn(),Dt=Dt,Mdil=10**options.logMdil)
-        saveuIIdata(label,Vmixfn,th,u0,tthresh=tthresh)
-    
-    if options.plotmany:
-        for suffix in ['','double','doubIII','ten','tenIII','tenth','tenthIII']:
-            plot_sfu('atomiccoolinghalo'+suffix,showplot=False)
+#    label = 'atomiccoolinghalo'
+#    if options.double: label = 'atomiccoolinghalodouble'
+#    elif options.doubIII: label = 'atomiccoolinghalodoubIII'
+#    elif options.ten: label = 'atomiccoolinghaloten'
+#    elif options.tenIII: label = 'atomiccoolinghalotenIII'
+#    elif options.tenth: label = 'atomiccoolinghalotenth'
+#    elif options.tenthIII: label = 'atomiccoolinghalotenthIII'
+#    if options.logMdil!=5: label += str(options.logMdil)
+#
+#    print label
+#    if options.uIII:
+#        tthresh=100
+#        u0 = .04; th = TopHat(Mhalo=Mhalo,zvir=zvir,fb=0.1551,mu=1.4)
+#        if options.double: u0 = u0*2
+#        elif options.doubIII: u0 = u0*2
+#        elif options.tenIII: u0 = u0*10
+#        elif options.ten: u0 = u0*10
+#        elif options.tenth: u0 = u0*0.1
+#        elif options.tenthIII: u0 = u0*0.1
+#        Vmixfn = karlsson.get_Vmixfn_K08(th.get_rho_of_t_fn(),Dt=Dt,Mdil=10**options.logMdil)
+#        numsf = np.sum(tarr>tthresh); numskip=len(tarr)-numsf
+#        u_init = np.concatenate((np.zeros(numskip),np.logspace(-2,-8,numsf)))
+#        saveuIIIdata(label,tarr,u_init,Vmixfn,th,u0,tthresh=tthresh)
+#    
+#    if options.uII:
+#        tthresh=110
+#        u0 = .4; th = TopHat(Mhalo=Mhalo,zvir=zvir,fb=0.1551,mu=1.4)
+#        if options.double: u0 = u0*2
+#        elif options.ten: u0 = u0*10
+#        elif options.tenth: u0 = u0*0.1
+#        Vmixfn = karlsson.get_Vmixfn_K08(th.get_rho_of_t_fn(),Dt=Dt,Mdil=10**options.logMdil)
+#        saveuIIdata(label,Vmixfn,th,u0,tthresh=tthresh)
+#    
+#
+#    if options.plotmany:
+#        for suffix in ['','double','doubIII','ten','tenIII','tenth','tenthIII']:
+#            plot_sfu('atomiccoolinghalo'+suffix,showplot=False)

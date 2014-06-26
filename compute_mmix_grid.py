@@ -1,31 +1,16 @@
 import numpy as np
 import time
-
-import karlsson
-from tophat import TopHat
-
 import h5py
 from optparse import OptionParser
 
-def run_compute_mmix_grid(filename,Mhalo,zvir,vturb,lturb,tmax,dt,tmin=0.0,logMdil=5):
-    """
-    Assume a TopHat density function
-    Mhalo: Msun
-    vturb: km/s
-    lturb: kpc
-    tmax, dt: Myr
-    """
-    vturb *= 3.16/3.08 * .001 #km/s to kpc/Myr
-    Dt =  vturb * lturb / 3.0
-    print filename
-    print "Mhalo",Mhalo,"zvir",zvir
-    print "vturb",vturb,"lturb",lturb,"Dt",Dt
-    print "tmax",tmax,"dt",dt
+import util
+import karlsson
 
-    th = TopHat(Mhalo=Mhalo,zvir=zvir,fb=0.1551,mu=1.4)
-    RHO = th.get_rho_of_t_fn()
-    VMIX = karlsson.get_Vmixfn_K08(RHO,Dt=Dt,Mdil=10**logMdil)
-    MMIXGRID_FILENAME = karlsson.get_mmixgrid_filename(filename)
+
+def run_compute_mmix_grid(envname,tmin,tmax,dt):#filename,Mhalo,zvir,vturb,lturb,tmax,dt,tmin=0.0,logMdil=5):
+    Mhalo,zvir,vturb,lturb,nSN,trecovery,logMdil = karlsson.envparams(envname)
+    th,RHO,VMIX = util.load_Vmix(envname,get_thrho=True)
+    MMIXGRID_FILENAME = karlsson.get_mmixgrid_filename(envname)
 
     f = h5py.File(MMIXGRID_FILENAME,"w")
     print "computing mmixgrid with midpoint (may take a long time)"
@@ -37,8 +22,10 @@ def run_compute_mmix_grid(filename,Mhalo,zvir,vturb,lturb,tmax,dt,tmin=0.0,logMd
     f.attrs['tmax'] = tmax
     f.attrs['dt'] = dt
     f.attrs['rho'] = 'tophat'
-    f.attrs['vmix'] = 'K08_Dt'+str(Dt)
+    f.attrs['envname'] = envname
+    f.attrs['vmix'] = 'K08_Dt'+str(Dt)+'_logMdil'+str(logMdil)
     f.attrs['Mhalo'] = Mhalo
+    f.attrs['zvir'] = zvir
 
     f['tarr']=tarr
     f['tauarr']=tauarr
@@ -48,93 +35,25 @@ def run_compute_mmix_grid(filename,Mhalo,zvir,vturb,lturb,tmax,dt,tmin=0.0,logMd
 
 if __name__=="__main__":
     parser = OptionParser()
-    parser.add_option("--minihalo",action='store_true',dest='minihalo',default=False)
-    parser.add_option("--atomiccoolinghalo",action='store_true',dest='atomiccoolinghalo',default=False)
-    parser.add_option("--atomiccoolinghaloearly",action='store_true',dest='atomiccoolinghaloearly',default=False)
-    parser.add_option("--atomiccoolinghalolate",action='store_true',dest='atomiccoolinghalolate',default=False)
-    parser.add_option("--atomiccoolinghalolatelowvturb",action='store_true',dest='atomiccoolinghalolate_lowvturb',default=False)
-    parser.add_option("--atomiccoolinghalolowmass",action='store_true',dest='atomiccoolinghalo_lowmass',default=False)
-    parser.add_option("--logmdil",action='store',type='int',dest='logMdil',default=5)
+    parser.add_option("--hires",action='store_true',dest='hires',default=False)
+    parser.add_option("--ultrahires",action='store_true',dest='ultrahires',default=False)
     options,args = parser.parse_args()
-    logMdil = options.logMdil
-    
-    ## Compute Minihalo
-    if options.minihalo:
-        Mhalo,zvir,vturb,lturb,nSN,trecovery = karlsson.params_minihalo()
+
+    dt = 0.1
+    if options.hires: dt = .03
+    if options.ultrahires: dt = .001
+
+    envname = args[0]
+    tmin = 0
+    if 'minihalo' in envname:
         fact = 1.25
-        tmax = 100. * fact #Myr
-        dt = 0.003*fact
-        if dt == 0.01*fact:
-            filename='lores_minihalo'
-        if dt == 0.003*fact:
-            filename='minihalo'
-        if dt == 0.001*fact:
-            filename='hires_minihalo'
-        if logMdil != 5: filename += str(logMdil)
-        run_compute_mmix_grid(filename,Mhalo,zvir,vturb,lturb,tmax,dt,logMdil=float(logMdil))
-
-    ## Compute Fat Minihalo
-    #if options.fatminihalo:
-    #    filename='fatminihalo'
-
-    ## Compute Atomic Cooling Halo
-    if options.atomiccoolinghalo:
-        Mhalo,zvir,vturb,lturb,nSN,trecovery = karlsson.params_atomiccoolinghalo()
-        tmax = 1000. #Myr
-        dt = 0.03
-        if dt == 0.1:
-            filename='lores_atomiccoolinghalo'
-        if dt == 0.03:
-            filename='atomiccoolinghalo'
-        if dt == 0.01:
-            filename='hires_atomiccoolinghalo'
-        if logMdil != 5: filename += str(logMdil)
-        run_compute_mmix_grid(filename,Mhalo,zvir,vturb,lturb,tmax,dt,logMdil=float(logMdil))
-    if options.atomiccoolinghaloearly:
-        Mhalo,zvir,vturb,lturb,nSN,trecovery = karlsson.params_atomiccoolinghaloearly()
-        tmax = 1000. #Myr
-        dt = 0.03
-        if dt == 0.1:
-            filename='lores_atomiccoolinghaloearly'
-        if dt == 0.03:
-            filename='atomiccoolinghaloearly'
-        if dt == 0.01:
-            filename='hires_atomiccoolinghaloearly'
-        if logMdil != 5: filename += str(logMdil)
-        run_compute_mmix_grid(filename,Mhalo,zvir,vturb,lturb,tmax,dt,logMdil=float(logMdil))
-    if options.atomiccoolinghalolate:
-        Mhalo,zvir,vturb,lturb,nSN,trecovery = karlsson.params_atomiccoolinghalolate()
-        tmax = 1000. #Myr
-        dt = 0.03
-        if dt == 0.1:
-            filename='lores_atomiccoolinghalolate'
-        if dt == 0.03:
-            filename='atomiccoolinghalolate'
-        if dt == 0.01:
-            filename='hires_atomiccoolinghalolate'
-        if logMdil != 5: filename += str(logMdil)
-        run_compute_mmix_grid(filename,Mhalo,zvir,vturb,lturb,tmax,dt,logMdil=float(logMdil))
-    if options.atomiccoolinghalolate_lowvturb:
-        Mhalo,zvir,vturb,lturb,nSN,trecovery = karlsson.params_atomiccoolinghalolate_lowvturb()
-        tmax = 1000. #Myr
-        dt = 0.03
-        if dt == 0.1:
-            filename='lores_atomiccoolinghalolate_lowvturb'
-        if dt == 0.03:
-            filename='atomiccoolinghalolate_lowvturb'
-        if dt == 0.01:
-            filename='hires_atomiccoolinghalolate_lowvturb'
-        if logMdil != 5: filename += str(logMdil)
-        run_compute_mmix_grid(filename,Mhalo,zvir,vturb,lturb,tmax,dt,logMdil=float(logMdil))
-    if options.atomiccoolinghalo_lowmass:
-        Mhalo,zvir,vturb,lturb,nSN,trecovery = karlsson.params_atomiccoolinghalo_lowmass()
-        tmax = 1000. #Myr
-        dt = 0.03
-        if dt == 0.1:
-            filename='lores_atomiccoolinghalo_lowmass'
-        if dt == 0.03:
-            filename='atomiccoolinghalo_lowmass'
-        if dt == 0.01:
-            filename='hires_atomiccoolinghalo_lowmass'
-        if logMdil != 5: filename += str(logMdil)
-        run_compute_mmix_grid(filename,Mhalo,zvir,vturb,lturb,tmax,dt,logMdil=float(logMdil))
+        tmax = 100. * fact
+        dt = dt/10. * fact
+    elif 'atomiccoolinghalo' in envname:
+        tmax = 1000.
+    else:
+        raise ValueError("Invalid envname: "+str(envname))
+        
+    print "Running",envname
+    print "tmin %5.4f tmax %5.1f dt %5.4f" % (tmin,tmax,dt)
+    run_compute_mmix_grid(envname,tmin,tmax,dt)
