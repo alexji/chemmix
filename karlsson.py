@@ -177,11 +177,13 @@ def uSN_G08_const(t):
     return .005
 
 def wISM_K05(k,mu):
-    return np.exp(-1.*mu)*mu**k/factorial(k)
+    return np.exp(-1.*mu)*mu**k/factorial(k) 
+    #return scipy.stats.poisson.pmf(k,mu) 
 
 def wISM_III(k,mu):
     """ NOT normalized!"""
-    return np.exp(-mu - ((mu-k)**2)/4.) * mu**k/factorial(k)
+    return np.exp(-(mu-k)**2/4.) * np.exp(-mu) * mu**k/factorial(k) 
+    #return np.exp(-(mu-k)**2/4.) * scipy.stats.poisson.pmf(k,mu)
 
 def Vmix_K05(t,sigma = 7*10**-4):
     """
@@ -351,15 +353,19 @@ def calc_fMkkp(k,kp,Mbins,DMlist,VMIX,
         muIIarr = MUII(t)
         muIIIarr= MUIII(t)
 
-        wprodII = WISMIII(kp,muIII)*WISMII(k-kp-1,muII)*UII(t-tau)
-        wprodIII= WISMIII(kp-1,muIII)*WISMII(k-kp,muII)*UIII(t-tau)
+        if k-kp-1 >= 0:
+            wprodII = WISMIII(kp,muIIIarr)*WISMII(k-kp-1,muIIarr)*UII(t-tau)
+        else: wprodII = 0
+        if kp-1 >= 0:
+            wprodIII= WISMIII(kp-1,muIIIarr)*WISMII(k-kp,muIIarr)*UIII(t-tau)
+        else: wprodIII = 0
 
         sfr = UII(t)
 
-        fMk[i] = np.sum(dt*dtau*Vmixarr*(wprodII+wprodIII)*sfr)
+        fMkkp[i] = np.sum(dt*dtau*Vmixarr*(wprodII+wprodIII)*sfr)
     if normalize:
-        fMk = fMk/np.sum(fMk)
-    return fMk
+        fMkkp = fMkkp/np.sum(fMkkp)
+    return fMkkp
 
 def hist_chemgrid(chemarr,bins,elemindex=None,verbose=False):
     if elemindex==None:
@@ -431,15 +437,34 @@ def calc_ck(kmax,wISM,mufn,SFR,tmin=0,tmax=1000,wISM2_0=None):
         myarr =  [quad(lambda t: wISM(k,mufn(t))*wISM2_0(t)*SFR(t),tmin,tmax)[0] for k in range(1,kmax+1)]
     return np.array(myarr)/np.sum(myarr)
 
-def calc_ckkp(kmax,wISMII,mufnII,wISMIII,mufnIII,uII,tmin=0,tmax=1000):
+def _calc_ckkp(tasknum,kmax,wISMII,mufnII,wISMIII,mufnIII,uII,tmin,tmax):
+    k,kp = divmod(tasknum,kmax+1)
+    k+=1 #k >= 1; k >= kp >= 0
+    if kp>k: return 0.
+    return quad(lambda t: wISMIII(kp,mufnIII(t))*wISMII(k-kp,mufnII(t))*uII(t),tmin,tmax)[0]
+
+def calc_ckkp(kmax,wISMII,mufnII,wISMIII,mufnIII,uII,tmin=0,tmax=1000,numprocs=1):
     """ normalized array of weights of how many SN enrich a star """
-    cgrid = np.zeros((kmax,kmax))
-    for ik in range(kmax):
-        k = ik+1
-        for ikp in range(k):
-            kp = ikp+1
-            cgrid[ik,ikp] = quad(lambda t: wISMIII(kp,mufnIII(t))*wISMII(k-kp,mufnII(t))*uII(t),tmin,tmax)[0]
-    return cgrid/np.sum(cgrid)
+    if numprocs==1:
+        cgrid = np.zeros((kmax,kmax+1))
+        for ik in range(kmax):
+            k = ik+1
+            start = time.time()
+            for ikp in range(k+1):
+                kp = ikp
+                cgrid[ik,ikp] = quad(lambda t: wISMIII(kp,mufnIII(t))*wISMII(k-kp,mufnII(t))*uII(t),tmin,tmax)[0]
+            print "k=%i: %4.2f" % (k,time.time()-start)
+    else:
+        assert numprocs > 1
+        pool = Pool(numprocs)
+        this_func = functools.partial(_calc_ckkp,kmax=kmax,
+                                      wISMII=wISMII,mufnII=mufnII,
+                                      wISMIII=wISMIII,mufnIII=mufnIII,uII=uII,
+                                      tmin=tmin,tmax=tmax)
+        cgrid = pool.map(this_func,range(kmax*(kmax+1)))
+        pool.close(); pool.join()
+        cgrid = np.array(cgrid).reshape((kmax,kmax+1))
+    return cgrid/np.nansum(cgrid)
 
 def compute_cfrac(C,Fe,CFe_crit=0.75,bins=None,
                   returnallinfo=False):
