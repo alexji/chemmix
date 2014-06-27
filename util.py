@@ -75,7 +75,9 @@ def load_ckkp(envname,sfrname):
     filename_ckkp = karlsson.get_ckkp_filename(envname,sfrname)
     f = h5py.File(filename_ckkp,'r')
     kmax = f.attrs['kmax']
-    cgrid = f['cgrid']
+    cgrid = np.array(f['cgrid'])
+    cgrid = cgrid[0:kmax,0:(kmax+1)]
+    
     f.close()
     return kmax,cgrid
 

@@ -9,6 +9,7 @@ import karlsson
 
 def run_compute_mmix_grid(envname,tmin,tmax,dt):#filename,Mhalo,zvir,vturb,lturb,tmax,dt,tmin=0.0,logMdil=5):
     Mhalo,zvir,vturb,lturb,nSN,trecovery,logMdil = karlsson.envparams(envname)
+    Dt,uSN = karlsson.get_Dt_uSN(vturb,lturb,nSN,trecovery)
     th,RHO,VMIX = util.load_Vmix(envname,get_thrho=True)
     MMIXGRID_FILENAME = karlsson.get_mmixgrid_filename(envname)
 
