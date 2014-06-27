@@ -337,32 +337,48 @@ def calc_fMk(k,Mbins,DMlist,Vmix,WISM,mufn,SFR,normalize=True,
         fMk = fMk/np.sum(fMk)
     return fMk
 
+def _calc_fMkkp(DM,k,kp,VMIX,WISMII,MUII,UII,WISMIII,MUIII,UIII):
+    assert DM.shape[1] == 4
+    t = DM[:,0]; tau = DM[:,1]; dt = DM[:,2]; dtau = DM[:,3]
+    Vmixarr = VMIX(tau) #assuming same Vmix for II and III
+    muIIarr = MUII(t)
+    muIIIarr= MUIII(t)
+    
+    if k-kp-1 >= 0:
+        wprodII = WISMIII(kp,muIIIarr)*WISMII(k-kp-1,muIIarr)*UII(t-tau)
+    else: wprodII = 0
+    if kp-1 >= 0:
+        wprodIII= WISMIII(kp-1,muIIIarr)*WISMII(k-kp,muIIarr)*UIII(t-tau)
+    else: wprodIII = 0
+    
+    sfr = UII(t)
+    
+    return np.sum(dt*dtau*Vmixarr*(wprodII+wprodIII)*sfr)
+
 def calc_fMkkp(k,kp,Mbins,DMlist,VMIX,
                WISMII,MUII,UII,
                WISMIII,MUIII,UIII,
+               numprocs=1,
                normalize=True):
     assert k > 0 and kp > 0 and kp <= k
     nbins = len(Mbins)-1
     assert nbins == len(DMlist)
 
-    fMkkp = np.zeros(nbins)
-    for i,DM in enumerate(DMlist):
-        assert DM.shape[1] == 4
-        t = DM[:,0]; tau = DM[:,1]; dt = DM[:,2]; dtau = DM[:,3]
-        Vmixarr = VMIX(tau) #assuming same Vmix for II and III
-        muIIarr = MUII(t)
-        muIIIarr= MUIII(t)
-
-        if k-kp-1 >= 0:
-            wprodII = WISMIII(kp,muIIIarr)*WISMII(k-kp-1,muIIarr)*UII(t-tau)
-        else: wprodII = 0
-        if kp-1 >= 0:
-            wprodIII= WISMIII(kp-1,muIIIarr)*WISMII(k-kp,muIIarr)*UIII(t-tau)
-        else: wprodIII = 0
-
-        sfr = UII(t)
-
-        fMkkp[i] = np.sum(dt*dtau*Vmixarr*(wprodII+wprodIII)*sfr)
+    if numprocs == 1:
+        fMkkp = np.zeros(nbins)
+        for i,DM in enumerate(DMlist):
+            fMkkp[i] = _calc_fMkkp(DM,k,kp,VMIX,WISMII,MUII,UII,WISMIII,MUIII,UIII)
+    else:
+        assert numprocs > 1
+        pool = Pool(numprocs)
+        this_func = functools.partial(_calc_fMkkp,k=k,kp=kp,
+                                      VMIX=VMIX,
+                                      WISMII=WISMII,MUII=MUII,UII=UII,
+                                      WISMIII=WISMIII,MUIII=MUIII,UIII=UIII)
+        fMkkp = pool.map(this_func,DMlist)
+        pool.close(); pool.join()
+        fMkkp = np.array(fMkkp)
+        
     if normalize:
         fMkkp = fMkkp/np.sum(fMkkp)
     return fMkkp
@@ -438,8 +454,7 @@ def calc_ck(kmax,wISM,mufn,SFR,tmin=0,tmax=1000,wISM2_0=None):
     return np.array(myarr)/np.sum(myarr)
 
 def _calc_ckkp(tasknum,kmax,wISMII,mufnII,wISMIII,mufnIII,uII,tmin,tmax):
-    k,kp = divmod(tasknum,kmax+1)
-    k+=1 #k >= 1; k >= kp >= 0
+    k,kp = divmod(tasknum,kmax+1); k+=1 #k >= 1; k >= kp >= 0
     if kp>k: return 0.
     return quad(lambda t: wISMIII(kp,mufnIII(t))*wISMII(k-kp,mufnII(t))*uII(t),tmin,tmax)[0]
 
