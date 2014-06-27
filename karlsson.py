@@ -155,7 +155,10 @@ def calc_sigE(t,rho_of_t,Mdil):
 
 def get_sigEfn_K08(rho_of_t,Mdil=10**5):
     """ Calculate initial dilution radius for Vmix_karlsson08 (kpc) """
-    return lambda t: calc_sigE(t,rho_of_t,Mdil)
+    return functools.partial(calc_sigE,rho_of_t=rho_of_t,Mdil=Mdil)#lambda t: calc_sigE(t,rho_of_t,Mdil)
+
+def const_sigEfn(t,Mdil): #corresponds to mu=4/3, n=0.1/cc
+    return 0.1936*(Mdil/10**5.)**(1./3)
 
 def Vmix_K08(t,sigEfn,Dt=3.3*10**-4):
     """ Calculate Vmix from Karlsson et al 2008
@@ -167,10 +170,10 @@ def get_Vmixfn_K08(rho_of_t,Mdil=10**5,Dt=3.3*10**-4,const_sigE=True):
     """ Calculate Vmix from Karlsson et al 2008
         Default Dt = 3.3 * 10**-4 kpc^2/Myr (turbulent velocity ~ 10 km/s) """
     if const_sigE: #corresponds to mu=4/3, n=0.1/cc
-        sigEfn = lambda t: 0.1936*(Mdil/10**5.)**(1./3)
+        sigEfn = functools.partial(const_sigEfn,Mdil=Mdil)#lambda t: 0.1936*(Mdil/10**5.)**(1./3)
     else:
         sigEfn = get_sigEfn_K08(rho_of_t,Mdil)
-    return lambda t: Vmix_K08(t,sigEfn,Dt=Dt)
+    return functools.partial(Vmix_K08,sigEfn=sigEfn,Dt=Dt)#lambda t: Vmix_K08(t,sigEfn,Dt=Dt)
 
 def uSN_G08_const(t):
     """ 10 SN in ~400 Myr over ~5 kpc^3 = .005 SN/kpc^3/Myr """
@@ -338,22 +341,60 @@ def calc_fMk(k,Mbins,DMlist,Vmix,WISM,mufn,SFR,normalize=True,
     return fMk
 
 def _calc_fMkkp(DM,k,kp,VMIX,WISMII,MUII,UII,WISMIII,MUIII,UIII):
-    assert DM.shape[1] == 4
+    #assert DM.shape[1] == 4
     t = DM[:,0]; tau = DM[:,1]; dt = DM[:,2]; dtau = DM[:,3]
     Vmixarr = VMIX(tau) #assuming same Vmix for II and III
     muIIarr = MUII(t)
     muIIIarr= MUIII(t)
     
-    if k-kp-1 >= 0:
+    #if k-kp-1 >= 0:
+    try:
         wprodII = WISMIII(kp,muIIIarr)*WISMII(k-kp-1,muIIarr)*UII(t-tau)
-    else: wprodII = 0
-    if kp-1 >= 0:
+    except:wprodII = 0
+    #if kp-1 >= 0:
+    try:
         wprodIII= WISMIII(kp-1,muIIIarr)*WISMII(k-kp,muIIarr)*UIII(t-tau)
-    else: wprodIII = 0
-    
+    except: wprodIII = 0
     sfr = UII(t)
-    
+    output = np.sum(dt*dtau*Vmixarr*(wprodII+wprodIII)*sfr)
     return np.sum(dt*dtau*Vmixarr*(wprodII+wprodIII)*sfr)
+
+def _calc_fMkkp_binsubset(DMlist,kmax,VMIX,WISMII,MUII,UII,WISMIII,MUIII,UIII):
+    numbins = len(DMlist)
+    outarr = np.zeros((kmax,kmax+1,numbins)) #k,kp,Mbin
+    for ibin,DM in enumerate(DMlist):
+        if DM.shape[0] == 0: continue #nothing in this Mbin
+        start = time.time()
+        for ik in range(kmax):
+            k = ik+1
+            for ikp in range(kmax+1):
+                kp = ikp
+                outarr[ik,ikp,ibin] = _calc_fMkkp(DM,k,kp,VMIX,WISMII,MUII,UII,WISMIII,MUIII,UIII)
+        print "lenDM: %i time: %2.2f" % (len(DM),"time:",time.time()-start)
+    return outarr
+
+def calc_fMkkp_onearr(kmax,DMlist,VMIX,
+                      WISMII,MUII,UII,
+                      WISMIII,MUIII,UIII,
+                      numprocs=1,
+                      normalize=True):
+    #divvy up DMlist based on numprocs
+    splitDMlist = []
+    binsperproc,numleft = divmod(len(DMlist),numprocs)
+    start = 0
+    for proc in range(numprocs):
+        stop = start + binsperproc + (proc < numleft)
+        splitDMlist.append(DMlist[start:stop])
+        start = stop
+
+    #have processes calculate separate DMlists and combine
+    this_func = functools.partial(_calc_fMkkp_binsubset,kmax=kmax,
+                                  VMIX=VMIX,WISMII=WISMII,MUII=MUII,UII=UII,
+                                  WISMIII=WISMIII,MUIII=MUIII,UIII=UIII)
+    pool = Pool(numprocs)
+    fMkkp = pool.map(this_func,splitDMlist)
+    pool.close(); pool.join()
+    return np.concatenate(fMkkp,axis=2)
 
 def calc_fMkkp(k,kp,Mbins,DMlist,VMIX,
                WISMII,MUII,UII,
