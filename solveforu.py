@@ -14,8 +14,8 @@ def compute_umufns(envname,sfrname,tmin=.01,tmax=1000.,tres=.1):
 
     numsf = np.sum(tarr>ttIII); numskip = len(tarr)-numsf
     u_init = np.concatenate((np.zeros(numskip),np.logspace(-2,-8,numsf)))
-    saveuIIIdata(label,tarr,u_init,Vmixfn,th,u0III,tthresh=ttIII)
-    saveuIIdata(label,Vmixfn,th,u0II,tthresh=ttII)
+    saveuIIIdata(label,tarr,u_init,Vmixfn,th,u0III,ttIII,tstop)
+    saveuIIdata(label,Vmixfn,th,u0II,ttII,tstop)
 
 def plot_sfu(label,showplot=True):
     import pylab as plt
@@ -31,12 +31,14 @@ def plot_sfu(label,showplot=True):
     plt.savefig('PLOTS/umugrid_'+label+'.png')
     if showplot: plt.show()
 
-def saveuIIdata(label,Vmixfn,th,u0,tthresh=110):
+def saveuIIdata(label,Vmixfn,th,u0,tthresh,tstop):
     uIIIfn,tarr,uarr = loaduIIIfn(label,retarrays=True)
     muIIIfn = loadmuIIIfn(label)#karlsson.get_mufn(Vmixfn,uIIIfn,tarr=tarr)
     Qparr = Qp(muIIIfn(tarr))
     narr = (th.get_n_of_t_fn())(tarr)
-    uarr = uII(Qparr,narr,u0=u0,nvir=th.nvir,tarr=tarr,tthresh=tthresh)
+    uarr = uII(Qparr,narr,u0=u0,nvir=th.nvir)
+    uarr[tarr < tthresh] = 0.
+    uarr[tarr > tstop]   = 0.
 
     ufn = interpolate.InterpolatedUnivariateSpline(tarr,uarr)
     mufn = karlsson.get_mufn(Vmixfn,ufn,tarr=tarr)
@@ -55,8 +57,8 @@ def loadmuIIfn(label,retarrays=False):
     if retarrays: return fn,tarr,muarr
     return fn
 
-def saveuIIIdata(label,tarr,u_init,Vmixfn,th,u0,tthresh=100):
-    uarr,muarr = solveforuIII(tarr,u_init,Vmixfn,th,u0,tthresh,verbose=True)
+def saveuIIIdata(label,tarr,u_init,Vmixfn,th,u0,tthresh,tstop):
+    uarr,muarr = solveforuIII(tarr,u_init,Vmixfn,th,u0,tthresh,tstop,verbose=True)
     np.savez('SFRDATA/'+label+'_uIII.npz',tarr=tarr,uarr=uarr,muarr=muarr)
 def loaduIIIfn(label,retarrays=False):
     npz = np.load('SFRDATA/'+label+'_uIII.npz')
@@ -74,23 +76,17 @@ def loadmuIIIfn(label,retarrays=False):
 def Qp(muIII):
     return np.exp(-muIII-(muIII**2)/4.)
 
-def uII(Qparr,narr,u0=.4,nvir=.1,tarr=None,tthresh=100):
-    uarr = u0 * (1-Qparr) * narr/nvir
-    if tarr != None:
-        uarr[tarr<tthresh] = 0
-    return uarr
+def uII(Qparr,narr,u0=.4,nvir=.1):
+    return u0 * (1-Qparr) * narr/nvir
 
-def uIII(muarr,narr,u0=.04,nvir=.1,tarr=None,tthresh=100):
-    uarr = u0 * Qp(muarr) * narr/nvir
-    if tarr != None:
-        uarr[tarr<tthresh] = 0
-    return uarr
+def uIII(muarr,narr,u0=.04,nvir=.1):
+    return u0 * Qp(muarr) * narr/nvir
 
 def squarediff(a1,a2):
     return np.sqrt(np.sum((a1-a2)**2))
 
 def solveforuIII(tarr,u_init,Vmixfn,th,u0,
-                 tthresh,
+                 tthresh,tstop,
                  itermax=10,threshold=10**-6,convergemin=1,
                  showplot=False,verbose=True):
     assert len(tarr) == len(u_init)
@@ -100,15 +96,18 @@ def solveforuIII(tarr,u_init,Vmixfn,th,u0,
     uarr = u_init
     convergecount = 0
     for i in xrange(itermax):
+        if verbose: start = time.time()
         ufn = interpolate.InterpolatedUnivariateSpline(tarr,uarr)
         mufn = karlsson.get_mufn(Vmixfn,ufn,
                                  tarr=tarr)
         muarr = mufn(tarr)
-        unew = uIII(muarr,narr,u0=u0,nvir=th.nvir,
-                    tarr=tarr,tthresh=tthresh)
-        print unew
+        unew = uIII(muarr,narr,u0=u0,nvir=th.nvir)
+        unew[tarr<tthresh] = 0.
+        unew[tarr>tstop]   = 0.
+
+        #if verbose: print unew
         chi2 = squarediff(unew,uarr)/len(tarr)
-        if verbose: print chi2
+        if verbose: print chi2,time.time()-start
         uarr = unew
         if showplot:
             plotdebug(tarr,muarr,uarr,narr,Vmixarr,th)
@@ -121,6 +120,9 @@ def solveforuIII(tarr,u_init,Vmixfn,th,u0,
                 convergecount += 1
         else:
             convergecount = 0
+    if convergecount < convergemin:
+        print "Warning: solveforuIII has not converged, stopping at %i iterations" % (itermax)
+
     muarr = mufn(tarr)
     return uarr,muarr
 
@@ -141,50 +143,30 @@ def plotdebug(tarr,muarr,uarr,narr,Vmixarr,th):
     ax4.set_ylabel('Vmix')#; ax4.set_yscale('log')
     plt.show()
 
-def test():
-    import pylab as plt
-    print "Testing solveforu"
-    u0 = .04
-    th = TopHat(Mhalo=10**8,zvir=10)
-    Vmixfn = karlsson.get_Vmixfn_K08(th.get_rho_of_t_fn())
-    print "nvir:",th.nvir
-
-    tarr = np.arange(0.01,1000,1)
-    numsf = np.sum(tarr>100); numskip=len(tarr)-numsf
-    u_init = np.concatenate((np.zeros(numskip),np.logspace(-2,-8,numsf)))
-    
-    uarr,muarr = solveforuIII(tarr,u_init,Vmixfn,th,u0)
-    plt.plot(tarr,uarr)
-    plt.loglog(); plt.ylabel('u'); plt.xlabel('t')
-    plt.xlim((100,1000)); plt.ylim((10**-8,10**0))
-    plt.show()
-
 if __name__=="__main__":
     parser = OptionParser()
     parser.add_option('--plotmany', action='store_true',dest='plotmany', default=False)
-
-#    parser.add_option('--uII', action='store_true',dest='uII', default=False)
-#    parser.add_option('--uIII',action='store_true',dest='uIII',default=False)
-#    parser.add_option('--double',action='store_true',dest='double',default=False)
-#    parser.add_option('--doubIII',action='store_true',dest='doubIII',default=False)
-#    parser.add_option('--ten',action='store_true',dest='ten',default=False)
-#    parser.add_option('--tenIII',action='store_true',dest='tenIII',default=False)
-#    parser.add_option('--tenth',action='store_true',dest='tenth',default=False)
-#    parser.add_option('--tenthIII',action='store_true',dest='tenthIII',default=False)
-
     parser.add_option('--tres',action='store',type='float',dest='tres',
                       default=.1)
-#    parser.add_option('--logmdil',action='store',type='int',dest='logMdil',
-#                      default=5)
     options,args = parser.parse_args()
 
-    print "Running solveforu"
-    print "envname:",args[0]
-    print "sfrname:",args[1]
-
-    start = time.time()
-    compute_umufns(envname,sfrname,tres=options.tres)
-    print "Finished:",time.time()-start
+    envname = args[0]
+    if options.plotmany:
+        f = open('sfrnames.txt','r')
+        sfrnames = [sfrname.strip() for sfrname in f.readlines()]
+        f.close()
+        print sfrnames
+        for sfrname in sfrnames:
+            plot_sfu(util.get_sfrlabel(envname,sfrname),showplot=False)
+    else:
+        sfrname = args[1]
+        print "Running solveforu"
+        print "envname:",envname
+        print "sfrname:",sfrname
+        
+        start = time.time()
+        compute_umufns(envname,sfrname,tres=options.tres)
+        print "Finished:",time.time()-start
 
 #    label = 'atomiccoolinghalo'
 #    if options.double: label = 'atomiccoolinghalodouble'
