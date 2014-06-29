@@ -4,6 +4,7 @@ from scipy.integrate import quad,trapz
 from scipy.interpolate import interp1d
 import scipy.stats
 import numpy.random as random
+import sys
 
 from tophat import TopHat
 import yields
@@ -359,18 +360,17 @@ def _calc_fMkkp(DM,k,kp,VMIX,WISMII,MUII,UII,WISMIII,MUIII,UIII):
     output = np.sum(dt*dtau*Vmixarr*(wprodII+wprodIII)*sfr)
     return np.sum(dt*dtau*Vmixarr*(wprodII+wprodIII)*sfr)
 
-def _calc_fMkkp_binsubset(DMlist,kmax,VMIX,WISMII,MUII,UII,WISMIII,MUIII,UIII):
-    numbins = len(DMlist)
-    outarr = np.zeros((kmax,kmax+1,numbins)) #k,kp,Mbin
-    for ibin,DM in enumerate(DMlist):
-        if DM.shape[0] == 0: continue #nothing in this Mbin
-        start = time.time()
-        for ik in range(kmax):
-            k = ik+1
-            for ikp in range(kmax+1):
-                kp = ikp
-                outarr[ik,ikp,ibin] = _calc_fMkkp(DM,k,kp,VMIX,WISMII,MUII,UII,WISMIII,MUIII,UIII)
-        print "lenDM: %i time: %2.2f" % (len(DM),"time:",time.time()-start)
+def _calc_fMkkp_binsubset(DM,kmax,VMIX,WISMII,MUII,UII,WISMIII,MUIII,UIII):
+    outarr = np.zeros((kmax,kmax+1,1)) #k,kp,Mbin
+    if DM.shape[0]==0: return outarr
+    start = time.time()
+    for ik in range(kmax):
+        k = ik+1
+        for ikp in range(kmax+1):
+            kp = ikp
+            outarr[ik,ikp,0] = _calc_fMkkp(DM,k,kp,VMIX,WISMII,MUII,UII,WISMIII,MUIII,UIII)
+    print "lenDM: %i time: %2.2f" % (len(DM),time.time()-start)
+    sys.stdout.flush()
     return outarr
 
 def calc_fMkkp_onearr(kmax,DMlist,VMIX,
@@ -378,23 +378,19 @@ def calc_fMkkp_onearr(kmax,DMlist,VMIX,
                       WISMIII,MUIII,UIII,
                       numprocs=1,
                       normalize=True):
-    #divvy up DMlist based on numprocs
-    splitDMlist = []
-    binsperproc,numleft = divmod(len(DMlist),numprocs)
-    start = 0
-    for proc in range(numprocs):
-        stop = start + binsperproc + (proc < numleft)
-        splitDMlist.append(DMlist[start:stop])
-        start = stop
-
     #have processes calculate separate DMlists and combine
     this_func = functools.partial(_calc_fMkkp_binsubset,kmax=kmax,
                                   VMIX=VMIX,WISMII=WISMII,MUII=MUII,UII=UII,
                                   WISMIII=WISMIII,MUIII=MUIII,UIII=UIII)
     pool = Pool(numprocs)
-    fMkkp = pool.map(this_func,splitDMlist)
+    fMkkp = pool.map(this_func,DMlist)
     pool.close(); pool.join()
-    return np.concatenate(fMkkp,axis=2)
+    fMkkp = np.concatenate(fMkkp,axis=2)
+    if normalize:
+        for ik in range(kmax):
+            for ikp in range(ik+1):
+                fMkkp[ik,ikp,:] = fMkkp[ik,ikp,:]/np.sum(fMkkp[ik,ikp,:])
+    return fMkkp
 
 def calc_fMkkp(k,kp,Mbins,DMlist,VMIX,
                WISMII,MUII,UII,
