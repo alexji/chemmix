@@ -477,10 +477,17 @@ def draw_from_distr(N,x,pdf,seed=None,eps=10**-10):
     if seed!=None:
         random.seed(seed)
     unifarr = random.rand(N)
-    cdf = np.cumsum(pdf)
+    if len(pdf.shape)==1:
+        cdf = np.cumsum(pdf)
+    else:
+        cdf = np.cumsum(pdf.reshape((-1,)))
     assert np.abs(cdf[-1] - 1.0) < eps, 'cdf[-1] != 1.0 (to tolerance of %e): %f' % (eps,cdf[-1])
     cdf[-1]=1
-    return np.array(x[np.searchsorted(cdf,unifarr)])
+    output = np.array(x[np.searchsorted(cdf,unifarr)])
+    if len(pdf.shape)==1:
+        return output
+    else:
+        return output.reshape(pdf.shape)
 
 def calc_ck(kmax,wISM,mufn,SFR,tmin=0,tmax=1000,wISM2_0=None):
     """ normalized array of weights of how many SN enrich a star """

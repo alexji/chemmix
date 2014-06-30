@@ -4,6 +4,9 @@ import karlsson
 import solveforu as sfu
 from tophat import TopHat
 
+def default_filename(envname,sfrname):
+    return envname+'_'+sfrname
+
 def load_mmixgrid(envname):
     f = h5py.File(karlsson.get_mmixgrid_filename(envname),'r')
     tarr = np.array(f['tarr']); tauarr = tarr
