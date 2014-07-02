@@ -128,14 +128,16 @@ def params_atomiccoolinghalo_lowmass():
 
 def get_mmixgrid_filename(envname,mmixgrid_foldername = "MMIXGRIDS"):
     return mmixgrid_foldername+'/'+envname+'_mmixgrid.hdf5'
-def get_fMkkp_filename(envname,suffix,k,kp,mmixdistr_foldername = "MMIXDISTR"):
-    return mmixdistr_foldername+'/'+envname+'_'+suffix+'_fM'+str(k)+'_'+str(kp)+'.npy'
-def get_ckkp_filename(envname,suffix,mmixdistr_foldername = "MMIXDISTR"):
-    return mmixdistr_foldername+'/'+envname+'_'+suffix+'_ckkp.hdf5'
-def get_Mbinskkp_filename(envname,suffix,mmixdistr_foldername = "MMIXDISTR"):
-    return mmixdistr_foldername+'/'+envname+'_'+suffix+'_Mbins.npy'
-def get_Mplotkkp_filename(envname,suffix,mmixdistr_foldername = "MMIXDISTR"):
-    return mmixdistr_foldername+'/'+envname+'_'+suffix+'_Mplot.npy'
+def get_fMkkp_filename(envname,sfrname,mmixdistr_foldername = "MMIXDISTR"):
+    return mmixdistr_foldername+'/'+envname+'_'+sfrname+'_fMkkp.npy'
+def get_ckkp_filename(envname,sfrname,mmixdistr_foldername = "MMIXDISTR"):
+    return mmixdistr_foldername+'/'+envname+'_'+sfrname+'_ckkp.hdf5'
+def get_Mbinskkp_filename(envname,sfrname,mmixdistr_foldername = "MMIXDISTR"):
+    return mmixdistr_foldername+'/'+envname+'_'+sfrname+'_Mbins.npy'
+def get_Mplotkkp_filename(envname,sfrname,mmixdistr_foldername = "MMIXDISTR"):
+    return mmixdistr_foldername+'/'+envname+'_'+sfrname+'_Mplot.npy'
+def get_chemgridkkp_filename(envname,sfrname,chemgrid_foldername = "CHEMGRIDS",postfix=''):
+    return chemgrid_foldername+'/'+envname+'_'+sfrname+'_chemgrid'+postfix+'.hdf5'
 
 def RHOP2f(filename,rhop2):
     if rhop2: return filename+'_rhop2'
@@ -388,7 +390,7 @@ def calc_fMkkp_onearr(kmax,DMlist,VMIX,
     fMkkp = np.concatenate(fMkkp,axis=2)
     if normalize:
         for ik in range(kmax):
-            for ikp in range(ik+1):
+            for ikp in range(ik+2):
                 fMkkp[ik,ikp,:] = fMkkp[ik,ikp,:]/np.sum(fMkkp[ik,ikp,:])
     return fMkkp
 
@@ -474,6 +476,7 @@ def convert_to_solar(elemnames,chemarr,verbose=False):
     return chemarr
 
 def draw_from_distr(N,x,pdf,seed=None,eps=10**-10):
+    if N==0: return np.array([])
     if seed!=None:
         random.seed(seed)
     unifarr = random.rand(N)

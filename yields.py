@@ -1,6 +1,7 @@
 import numpy as np
 import pylab as plt
 import os
+import karlsson
 
 import hw10
 
@@ -36,9 +37,61 @@ class yieldsbase(object):
     def __repr__(self):
         return self.name
 
+class randombase(yieldsbase):
+    def draw_yields(self,N):
+        sn_types = karlsson.draw_from_distr(N,self.sntypearr,self.sntypepdf)
+        return self.get_yields(sn_types)
+
+class ryI05N06(randombase):
+    def __init__(self,p):
+        self.p = p
+        self.sntypearr = np.array([1,2])
+        self.sntypepdf = np.array([p,1-p])
+        self.name = "Iwamoto05 and Nomoto06 Yields (p=%f)" % (p)
+        self.shortname = "I05N06p%0.2f" % (p)
+        self.numyields = 6
+        self.elemnames = ['C','O','Mg','Si','Ca','Fe']
+        self.elemmass = map_elemnames_to_elemmass(self.elemnames)
+        self.numtypes  = 2
+    def yieldfn(self,sn_type):
+        if sn_type==1: #I05
+            return [.20, 1.1e-5,.39,3e-4,3.6e-5,2.7e-6]
+        if sn_type==2: #N06 M=20
+            return [ 0.21100001,  2.11000009,  0.150354,    0.099692,    0.00624737,  0.072287  ]
+
+class ryN06(randombase):
+    def __init__(self,imf):
+        assert len(imf)==7
+        assert np.sum(imf)-1 < 10**-10
+        self.sntypepdf = np.array(imf)
+        self.sntypearr = np.array([1,2,3,4,5,6,7])
+        
+        self.name = "Nomoto 06 Yields"
+        self.shortname = "N06"
+        self.numyields = 6
+        self.elemnames = ['C','O','Mg','Si','Ca','Fe']
+        self.elemmass = map_elemnames_to_elemmass(self.elemnames)
+        self.numtypes  = 7
+        self.massarr = np.array([13.,15,18,20,25,30,40])
+    def yieldfn(self,sn_type):
+        if sn_type==1: #13 Msun
+            return [ 0.07410008,  0.45000175,  0.0864267,   0.08257,     0.00293784,  0.071726  ]
+        if sn_type==2: #15 Msun
+            return [ 0.17200006,  0.77300646,  0.068896,    0.073588,    0.00443338,  0.07238   ]
+        if sn_type==3: #18 Msun
+            return [ 0.218,       1.38000491,  0.158456,    0.116787,    0.00441815,  0.072278  ]
+        if sn_type==4: #20 Msun
+            return [ 0.21100001,  2.11000009,  0.150354,    0.099692,    0.00624737,  0.072287  ]
+        if sn_type==5: #25 Msun
+            return [ 0.29400001,  2.79000216,  0.1200898,   0.3513464,   0.02481727,  0.073777  ]
+        if sn_type==6: #30 Msun
+            return [ 0.33700001,  4.81000002,  0.226373,    0.248843,    0.0174063,   0.074573  ]
+        if sn_type==7: #40 Msun
+            return [ 0.429,       8.38000021,  0.478553,    1.02666,     0.03733042,  0.08000101]
+
 class I05N06yields(yieldsbase):
     def __init__(self):
-        self.name = "Iwamoto05 and Tominago07 Yields"
+        self.name = "Iwamoto05 and Nomoto06 Yields"
         self.shortname = "I05N06"
         self.numyields = 6
         self.elemnames = ['C','O','Mg','Si','Ca','Fe']
@@ -49,22 +102,6 @@ class I05N06yields(yieldsbase):
             return [.20, 1.1e-5,.39,3e-4,3.6e-5,2.7e-6]
         if sn_type==2: #N06 M=20
             return [ 0.21100001,  2.11000009,  0.150354,    0.099692,    0.00624737,  0.072287  ]
-        
-#class I05T07yields(yieldsbase):
-#    def __init__(self):
-#        self.name = "Iwamoto05 and Tominago07 Yields"
-#        self.shortname = "I05T07"
-#        self.numyields = 6
-#        self.elemnames = ['C','O','Mg','Si','Ca','Fe']
-#        self.elemmass = map_elemnames_to_elemmass(self.elemnames)
-#        self.numtypes  = 2
-#    def yieldfn(self,sn_type):
-#        if sn_type==1: #I05
-#            return [.20, 1.1e-5,.39,3e-4,3.6e-5,2.7e-6]
-#        if sn_type==2: #T07 
-#            return []
-#        #self.massarr = np.array([13.,15,18,20,25,30,40])
-        
 
 class nomoto06yields(yieldsbase):
     def __init__(self):
@@ -90,7 +127,6 @@ class nomoto06yields(yieldsbase):
             return [ 0.33700001,  4.81000002,  0.226373,    0.248843,    0.0174063,   0.074573  ]
         if sn_type==7: #40 Msun
             return [ 0.429,       8.38000021,  0.478553,    1.02666,     0.03733042,  0.08000101]
-
 
 class nomoto06interpyields(yieldsbase):
     def __init__(self,datafile="YIELDDATA/interp_nomoto06_z0.npy",autointerpolate=True):
