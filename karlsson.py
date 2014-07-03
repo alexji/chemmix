@@ -3,9 +3,11 @@ from math import factorial
 from scipy.integrate import quad,trapz
 from scipy.interpolate import interp1d
 import scipy.stats
+import scipy.special
 import numpy.random as random
 import sys
 
+import util
 from tophat import TopHat
 import yields
 
@@ -136,8 +138,10 @@ def get_Mbinskkp_filename(envname,sfrname,mmixdistr_foldername = "MMIXDISTR"):
     return mmixdistr_foldername+'/'+envname+'_'+sfrname+'_Mbins.npy'
 def get_Mplotkkp_filename(envname,sfrname,mmixdistr_foldername = "MMIXDISTR"):
     return mmixdistr_foldername+'/'+envname+'_'+sfrname+'_Mplot.npy'
-def get_chemgridkkp_filename(envname,sfrname,chemgrid_foldername = "CHEMGRIDS",postfix=''):
+def get_chemgridkkp_filename(envname,sfrname,postfix='',chemgrid_foldername = "CHEMGRIDS"):
     return chemgrid_foldername+'/'+envname+'_'+sfrname+'_chemgrid'+postfix+'.hdf5'
+def get_chemgridhist_filename(envname,sfrname,postfix='',chemgrid_foldername = "CHEMGRIDS"):
+    return chemgrid_foldername+'/'+envname+'_'+sfrname+postfix+'.hist'
 
 def RHOP2f(filename,rhop2):
     if rhop2: return filename+'_rhop2'
@@ -182,13 +186,22 @@ def uSN_G08_const(t):
     """ 10 SN in ~400 Myr over ~5 kpc^3 = .005 SN/kpc^3/Myr """
     return .005
 
+def _wISM_K05(k,mu):
+    return -mu + k*np.log(mu)-k*np.log(k)+k-.5*np.log(2*np.pi*k)
+
+def _wISM_K05_a(k,mu):
+    return np.exp(-mu)*mu**k/factorial(k) 
+def _wISM_K05_b(k,mu):
+    return np.exp(-mu + k*np.log(mu)-k*np.log(k)+k-.5*np.log(2*np.pi*k))
+
 def wISM_K05(k,mu):
-    return np.exp(-1.*mu)*mu**k/factorial(k) 
+    return np.exp(k*np.log(mu)-scipy.special.gammaln(k+1)-mu)
+    #return np.exp(-mu)*mu**k/factorial(k) 
     #return scipy.stats.poisson.pmf(k,mu) 
 
 def wISM_III(k,mu):
     """ NOT normalized!"""
-    return np.exp(-(mu-k)**2/4.) * np.exp(-mu) * mu**k/factorial(k) 
+    return np.exp(-(mu-k)**2/4.) * wISM_K05(k,mu) #np.exp(-mu) * mu**k/factorial(k) 
     #return np.exp(-(mu-k)**2/4.) * scipy.stats.poisson.pmf(k,mu)
 
 def Vmix_K05(t,sigma = 7*10**-4):
@@ -359,29 +372,28 @@ def _calc_fMkkp(DM,k,kp,VMIX,WISMII,MUII,UII,WISMIII,MUIII,UIII):
         wprodIII= WISMIII(kp-1,muIIIarr)*WISMII(k-kp,muIIarr)*UIII(t-tau)
     except: wprodIII = 0
     sfr = UII(t)
-    output = np.sum(dt*dtau*Vmixarr*(wprodII+wprodIII)*sfr)
     return np.sum(dt*dtau*Vmixarr*(wprodII+wprodIII)*sfr)
 
-def _calc_fMkkp_binsubset(DM,kmax,VMIX,WISMII,MUII,UII,WISMIII,MUIII,UIII):
-    outarr = np.zeros((kmax,kmax+1,1)) #k,kp,Mbin
+def _calc_fMkkp_binsubset(DM,kmax,kpmax,VMIX,WISMII,MUII,UII,WISMIII,MUIII,UIII):
+    outarr = np.zeros((kmax,kpmax+1,1)) #k,kp,Mbin
     if DM.shape[0]==0: return outarr
     start = time.time()
     for ik in range(kmax):
         k = ik+1
-        for ikp in range(kmax+1):
+        for ikp in range(min(kpmax,k)+1):
             kp = ikp
             outarr[ik,ikp,0] = _calc_fMkkp(DM,k,kp,VMIX,WISMII,MUII,UII,WISMIII,MUIII,UIII)
-    print "lenDM: %i time: %2.2f" % (len(DM),time.time()-start)
+    print "lenDM: %7i time: %6.1f" % (len(DM),time.time()-start)
     sys.stdout.flush()
     return outarr
 
-def calc_fMkkp_onearr(kmax,DMlist,VMIX,
-                      WISMII,MUII,UII,
-                      WISMIII,MUIII,UIII,
-                      numprocs=1,
-                      normalize=True):
+def calc_fMkkp(kmax,kpmax,DMlist,VMIX,
+               WISMII,MUII,UII,
+               WISMIII,MUIII,UIII,
+               numprocs=1,
+               normalize=True):
     #have processes calculate separate DMlists and combine
-    this_func = functools.partial(_calc_fMkkp_binsubset,kmax=kmax,
+    this_func = functools.partial(_calc_fMkkp_binsubset,kmax=kmax,kpmax=kpmax,
                                   VMIX=VMIX,WISMII=WISMII,MUII=MUII,UII=UII,
                                   WISMIII=WISMIII,MUIII=MUIII,UIII=UIII)
     pool = Pool(numprocs)
@@ -390,37 +402,73 @@ def calc_fMkkp_onearr(kmax,DMlist,VMIX,
     fMkkp = np.concatenate(fMkkp,axis=2)
     if normalize:
         for ik in range(kmax):
-            for ikp in range(ik+2):
+            for ikp in range(min(ik+1,kpmax)+1):
                 fMkkp[ik,ikp,:] = fMkkp[ik,ikp,:]/np.sum(fMkkp[ik,ikp,:])
     return fMkkp
 
-def calc_fMkkp(k,kp,Mbins,DMlist,VMIX,
-               WISMII,MUII,UII,
-               WISMIII,MUIII,UIII,
-               numprocs=1,
-               normalize=True):
-    assert k > 0 and kp > 0 and kp <= k
-    nbins = len(Mbins)-1
-    assert nbins == len(DMlist)
+#def calc_fMkkp(k,kp,Mbins,DMlist,VMIX,
+#               WISMII,MUII,UII,
+#               WISMIII,MUIII,UIII,
+#               numprocs=1,
+#               normalize=True):
+#    assert k > 0 and kp > 0 and kp <= k
+#    nbins = len(Mbins)-1
+#    assert nbins == len(DMlist)
+#
+#    if numprocs == 1:
+#        fMkkp = np.zeros(nbins)
+#        for i,DM in enumerate(DMlist):
+#            fMkkp[i] = _calc_fMkkp(DM,k,kp,VMIX,WISMII,MUII,UII,WISMIII,MUIII,UIII)
+#    else:
+#        assert numprocs > 1
+#        pool = Pool(numprocs)
+#        this_func = functools.partial(_calc_fMkkp,k=k,kp=kp,
+#                                      VMIX=VMIX,
+#                                      WISMII=WISMII,MUII=MUII,UII=UII,
+#                                      WISMIII=WISMIII,MUIII=MUIII,UIII=UIII)
+#        fMkkp = pool.map(this_func,DMlist)
+#        pool.close(); pool.join()
+#        fMkkp = np.array(fMkkp)
+#        
+#    if normalize:
+#        fMkkp = fMkkp/np.sum(fMkkp)
+#    return fMkkp
 
-    if numprocs == 1:
-        fMkkp = np.zeros(nbins)
-        for i,DM in enumerate(DMlist):
-            fMkkp[i] = _calc_fMkkp(DM,k,kp,VMIX,WISMII,MUII,UII,WISMIII,MUIII,UIII)
-    else:
-        assert numprocs > 1
-        pool = Pool(numprocs)
-        this_func = functools.partial(_calc_fMkkp,k=k,kp=kp,
-                                      VMIX=VMIX,
-                                      WISMII=WISMII,MUII=MUII,UII=UII,
-                                      WISMIII=WISMIII,MUIII=MUIII,UIII=UIII)
-        fMkkp = pool.map(this_func,DMlist)
-        pool.close(); pool.join()
-        fMkkp = np.array(fMkkp)
-        
-    if normalize:
-        fMkkp = fMkkp/np.sum(fMkkp)
-    return fMkkp
+def hist_chemgridkkp(ckkp,chemgrid,binlist,elemnames,verbose=False):
+    Nstars,numyields,kmax,kpmaxp1 = chemgrid.shape
+    assert numyields == len(elemnames) and numyields == len(binlist)
+    assert kmax==ckkp.shape[0] and kpmaxp1==ckkp.shape[1]
+    kpmax = kpmaxp1 - 1
+
+    # generate gigantic weights array for histograms
+    weights = np.zeros(chemgrid.shape)
+    weights = weights[:,0,:,:]
+    for ik in range(kmax):
+        k = ik+1
+        for ikp in range(min(k,kpmax)+1):
+            weights[:,ik,ikp] = ckkp[ik,ikp]
+    # flatten chemgrid in the same order as weights: not needed!
+    #chemgrid = (chemgrid.swapaxes(1,3)).swapaxes(0,2)
+    #chemgrid = chemgrid.reshape((Nstars*kmax*kpmaxp1,numyields))
+
+    print weights.shape,chemgrid[:,0,:,:].shape
+
+    outdict = {}
+    for irow,erow in enumerate(elemnames):
+        for icol,ecol in enumerate(elemnames):
+            if icol > irow: continue
+            if irow==icol: 
+                outdict[(irow,icol)] = np.histogram(chemgrid[:,icol,:,:],
+                                                    bins=binlist[icol],
+                                                    weights=weights,normed=True)
+            else:
+                #note weights[:,icol,:,:] == weights[:,irow,:,:]
+                myhist2d = np.histogram2d(chemgrid[:,icol,:,:].reshape(-1),
+                                          chemgrid[:,irow,:,:].reshape(-1),
+                                          bins=[binlist[icol],binlist[irow]],
+                                          weights=weights.reshape(-1),normed=True)
+                outdict[(irow,icol)] = myhist2d
+    return outdict
 
 def hist_chemgrid(chemarr,bins,elemindex=None,verbose=False):
     if elemindex==None:
@@ -468,11 +516,22 @@ def convert_to_solar(elemnames,chemarr,verbose=False):
             if verbose: 
                 print "%s: min %3.2f max %3.2f" % (elemnames[z],np.min(chemarr[:,z]),np.max(chemarr[:,z]))
     elif len(chemarr.shape)==3: #chemarr with multiple k
-        for k in range(chemarr.shape[2]):
+        for ik in range(chemarr.shape[2]):
+            k = ik+1
             for z in range(len(elemnames)):
-                chemarr[:,z,k] -= asplund09ZHsun[z]
+                chemarr[:,z,ik] -= asplund09ZHsun[z]
                 if verbose: 
-                    print "%i %s: min %3.2f max %3.2f" % (k,elemnames[z],np.min(chemarr[:,z]),np.max(chemarr[:,z]))
+                    print "%i %s: min %3.2f max %3.2f" % (k,elemnames[z],np.min(chemarr[:,z,ik]),np.max(chemarr[:,z,ik]))
+    elif len(chemarr.shape)==4: #chemarr with k, kp
+        kmax = chemarr.shape[2]; kpmax = chemarr.shape[3]-1
+        for ik in range(kmax):
+            k = ik+1
+            for ikp in range(min(k,kpmax)+1):
+                kp = ikp
+                for z in range(len(elemnames)):
+                    chemarr[:,z,ik,ikp] -= asplund09ZHsun[z]
+                    if verbose: 
+                        print "%i %i %s: min %3.2f max %3.2f" % (k,kp,elemnames[z],np.min(chemarr[:,z,ik,ikp]),np.max(chemarr[:,z,ik,ikp]))
     return chemarr
 
 def draw_from_distr(N,x,pdf,seed=None,eps=10**-10):
@@ -503,7 +562,11 @@ def calc_ck(kmax,wISM,mufn,SFR,tmin=0,tmax=1000,wISM2_0=None):
 def _calc_ckkp(tasknum,kmax,wISMII,mufnII,wISMIII,mufnIII,uII,tmin,tmax):
     k,kp = divmod(tasknum,kmax+1); k+=1 #k >= 1; k >= kp >= 0
     if kp>k: return 0.
-    return quad(lambda t: wISMIII(kp,mufnIII(t))*wISMII(k-kp,mufnII(t))*uII(t),tmin,tmax)[0]
+    tarr = np.arange(tmin,tmax+.01,.01)
+    f = lambda t: wISMIII(kp,mufnIII(t))*wISMII(k-kp,mufnII(t))*uII(t)
+    y = f(tarr); y[np.isnan(y)] = 0
+    return trapz(y,x=tarr)
+    #return quad(lambda t: wISMIII(kp,mufnIII(t))*wISMII(k-kp,mufnII(t))*uII(t),tmin,tmax)[0]
 
 def calc_ckkp(kmax,wISMII,mufnII,wISMIII,mufnIII,uII,tmin=0,tmax=1000,numprocs=1):
     """ normalized array of weights of how many SN enrich a star """

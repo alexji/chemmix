@@ -1,11 +1,15 @@
 import numpy as np
 import h5py
 import karlsson
+import pickle
 import solveforu as sfu
 from tophat import TopHat
 
 def default_filename(envname,sfrname):
     return envname+'_'+sfrname
+
+def count_kkp(kmax,kpmax):
+    return kmax + kpmax*(kpmax+1)/2 + (kmax-kpmax)*kpmax
 
 def load_mmixgrid(envname):
     f = h5py.File(karlsson.get_mmixgrid_filename(envname),'r')
@@ -78,12 +82,19 @@ def load_ckkp(envname,sfrname,full_grid=False):
     filename_ckkp = karlsson.get_ckkp_filename(envname,sfrname)
     f = h5py.File(filename_ckkp,'r')
     kmax = f.attrs['kmax']
+    kpmax = f.attrs['kpmax']
     cgrid = np.array(f['cgrid'])
     f.close()
     if full_grid:
-        return kmax,cgrid
+        return kmax,kpmax,cgrid
     else:
-        return kmax,cgrid[0:kmax,0:(kmax+1)]
+        return kmax,kpmax,cgrid[0:kmax,0:(kpmax+1)]
+
+def load_chemgridhist(envname,sfrname,postfix):
+    f = open(karlsson.get_chemgridhist_filename(envname,sfrname,postfix=postfix),'r')
+    mydict = pickle.load(f)
+    f.close()
+    return mydict
 
 class interp1d(object):
     """

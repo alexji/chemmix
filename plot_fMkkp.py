@@ -40,7 +40,7 @@ if __name__=="__main__":
     sfrname = 'fidTS400'
     Mhalo = 10**8; fb = 0.1551; Mmax = Mhalo*fb
     
-    kmax,ckkp = util.load_ckkp(envname,sfrname)
+    kmax,kpmax,ckkp = util.load_ckkp(envname,sfrname)
     Mplot = np.load(karlsson.get_Mplotkkp_filename(envname,sfrname))
     fMkkp = np.load(karlsson.get_fMkkp_filename(envname,sfrname))
     plt.figure()

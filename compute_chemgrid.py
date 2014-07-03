@@ -8,13 +8,14 @@ import functools
 import karlsson
 import util
 
-def _run_compute_chemgrid(tasknum,kmax,Mplot,fMkkp,yieldII,yieldIII,masstonum,Nstars,
+import pickle
+
+def _run_compute_chemgrid(tasknum,kmax,kpmax,Mplot,fMkkp,yieldII,yieldIII,masstonum,Nstars,
                           timethis=True):
     if timethis: start = time.time()
-    #assert yieldII.numyields == yieldIII.numyields
     numyields = yieldII.numyields
 
-    ik,ikp = divmod(tasknum,kmax+1); k=ik+1; kp=ikp
+    ik,ikp = divmod(tasknum,kpmax+1); k=ik+1; kp=ikp
     if kp>k: return np.zeros((Nstars,numyields))
     this_fMkkp = fMkkp[ik,ikp,:]
 
@@ -45,11 +46,11 @@ def _run_compute_chemgrid(tasknum,kmax,Mplot,fMkkp,yieldII,yieldIII,masstonum,Ns
     return yieldnumratio
 
 def run_compute_chemgrid(envname,sfrname,yII,yIII,
-                         Mmax,
+                         Mmax,savegrid=False,
                          Nstars=10**6,numprocs=1,
                          postfix='',XH=0.75):
     assert yII.elemnames == yIII.elemnames
-    kmax,ckkp = util.load_ckkp(envname,sfrname)
+    kmax,kpmax,ckkp = util.load_ckkp(envname,sfrname)
     masstonum = 1.0/(yII.elemmass * XH)
 
     Mplot = np.load(karlsson.get_Mplotkkp_filename(envname,sfrname))
@@ -60,32 +61,35 @@ def run_compute_chemgrid(envname,sfrname,yII,yIII,
     badprob = np.sum(fMkkp[:,:,badii],axis=2).reshape((fMkkp.shape[0],fMkkp.shape[1],1))
     fMkkp = np.concatenate((fMkkp[:,:,keepii],badprob),axis=2)
 
-    
     chemgrid_filename = karlsson.get_chemgridkkp_filename(envname,sfrname,postfix=postfix)
     pool = Pool(numprocs)
     print "Using",numprocs,"processors to run",chemgrid_filename,"with N =",Nstars
+    if not savegrid: print "(will not save chemgrid to save space)"
     print "yII:",str(yII)
     print "yIII:",str(yIII)
     numyields = yII.numyields
     assert numyields == yIII.numyields
 
     start = time.time()
-    this_func = functools.partial(_run_compute_chemgrid,kmax=kmax,Mplot=Mplot,fMkkp=fMkkp,
+    this_func = functools.partial(_run_compute_chemgrid,kmax=kmax,kpmax=kpmax,
+                                  Mplot=Mplot,fMkkp=fMkkp,
                                   yieldII=yII,yieldIII=yIII,masstonum=masstonum,
                                   Nstars=Nstars,timethis=False)
-    numtasks = kmax*(kmax+1)
-    chemlist = pool.map(this_func,range(numtasks))
+    numtasks = kmax*(kpmax+1)
+    chemlist = pool.map(this_func,xrange(numtasks))
     pool.close()
     print "Finished! Time: %f" % (time.time()-start)
 
     #copy into an array for saving
     start = time.time()
-    output = np.zeros((Nstars,numyields,kmax,kmax+1))
+    output = np.zeros((Nstars,numyields,kmax,kpmax+1))
     for i,arr in enumerate(chemlist):
-        ik,ikp = divmod(i,kmax+1)
+        ik,ikp = divmod(i,kpmax+1)
         output[:,:,ik,ikp] = arr
-    np.save(chemgrid_filename,output)
-    print "Time to copy/save grid: %f" % (time.time()-start)
+    output = karlsson.convert_to_solar(yII.elemnames,output,verbose=False)
+    if savegrid: np.save(chemgrid_filename,output)
+    print "Time to copy/convert[/save] grid: %f" % (time.time()-start)
+    return output
 
 def relative_imf(marr,alpha,norm=False):
     Mmax = float(marr[-1])
@@ -98,20 +102,36 @@ if __name__=="__main__":
     import yields
     parser = OptionParser()
     parser.add_option('-j','--numprocs',action='store',type='int',dest='numprocs',default=1)
+    parser.add_option('--savegrid',action='store_true',dest='savegrid',default=False)
     options,args = parser.parse_args()
 
     #envname = args[0]; sfrname = args[1]
     envname = 'atomiccoolinghalo'
-    sfrname = 'fidTS400'
-    postfix = 'test'
+    sfrname = 'fidTS300'
     fb = .1551; Mhalo = karlsson.envparams(envname)[0]
     Mmax = fb * Mhalo
 
     salimf  = relative_imf(np.array([13,15,18,20,25,30,40.]),2.35,norm=True) #salpeter imf
     popIIy  = yields.ryN06(salimf)
+    elemnames = popIIy.elemnames
     
-    popIIIy_arr = [yields.ryI05N06(p) for p in [.5]] #[.1,.25,.5,.75,.9,.95]]
+    popIIIy_arr = [yields.ryI05N06(p) for p in [.3,.5,.7,.9,.95]] #[.1,.25,.5,.75,.9,.95]]
     
+    binlist = [np.arange(-7,1,.5) for i in range(6)]
+
     for popIIIy in popIIIy_arr:
-        run_compute_chemgrid(envname,sfrname,popIIy,popIIIy,Mmax,Nstars=10**4,
-                             numprocs=options.numprocs,postfix=postfix)
+        postfix = 'testp%0.2f' % (popIIIy.p)
+        chemgrid = run_compute_chemgrid(envname,sfrname,popIIy,popIIIy,Mmax,
+                                        savegrid=options.savegrid,Nstars=10**6,
+                                        numprocs=options.numprocs,postfix=postfix)
+        kmax,kpmax,ckkp = util.load_ckkp(envname,sfrname)
+        start = time.time()
+        outdict = karlsson.hist_chemgridkkp(ckkp,chemgrid,binlist,elemnames)
+        outdict['yII'] = popIIy
+        outdict['yIII'] = popIIIy
+        outdict['binlist'] = binlist
+        print "Histogramming done: %f" % (time.time()-start)
+        histname = karlsson.get_chemgridhist_filename(envname,sfrname,postfix=postfix)
+        f = open(histname,'w')
+        pickle.dump(outdict,f)
+        f.close()

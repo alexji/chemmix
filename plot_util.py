@@ -96,7 +96,7 @@ def plot_2d_hist(xdat,ydat,
 def find_confidence_interval(x, pdf, confidence_level):
     return pdf[pdf > x].sum() - confidence_level
  
-def density_contour(xdata, ydata, xbins, ybins, ax=None, **contour_kwargs):
+def density_contour(xdata, ydata, xbins, ybins, ax=None, my2dhist=None, **contour_kwargs):
     """ Create a density contour plot. 
     Modified from https://gist.github.com/adrn/3993992
     
@@ -114,11 +114,15 @@ def density_contour(xdata, ydata, xbins, ybins, ax=None, **contour_kwargs):
         kwargs to be passed to pyplot.contour()
     """
     
-    H, xedges, yedges = np.histogram2d(xdata, ydata, bins=(xbins,ybins), normed=True)
-    try: #xbins, ybins are arrays
-        nbins_x = len(xbins)-1; nbins_y = len(ybins)-1
-    except: #xbins, ybins are integers
-        nbins_x = xbins; nbins_y = ybins
+    if my2dhist != None:
+        H,xedges,yedges = my2dhist
+        nbins_x = len(xedges)-1; nbins_y = len(yedges)-1
+    else:
+        H, xedges, yedges = np.histogram2d(xdata, ydata, bins=(xbins,ybins), normed=True)
+        try: #xbins, ybins are arrays
+            nbins_x = len(xbins)-1; nbins_y = len(ybins)-1
+        except: #xbins, ybins are integers
+            nbins_x = xbins; nbins_y = ybins
     x_bin_sizes = (xedges[1:] - xedges[:-1]).reshape((1,nbins_x))
     y_bin_sizes = (yedges[1:] - yedges[:-1]).reshape((nbins_y,1))
     
@@ -139,9 +143,15 @@ def density_contour(xdata, ydata, xbins, ybins, ax=None, **contour_kwargs):
     
     return contour
  
+def plot1dhist(h,x,ax=None,**kwargs):
+    if ax==None: ax = plt.gca()
+    xplot = (x[:-1]+x[1:])/2.
+    ax.plot(xplot,h,drawstyle='steps-mid',**kwargs)
+
 def test_density_contour():
     norm = np.random.normal(10., 15., size=(12540035, 2))
     f,(ax1,ax2) = plt.subplots(2)
     density_contour(norm[:,0], norm[:,1], 100, 75, ax=ax1)
     density_contour(norm[:,0], norm[:,1], np.arange(-80,81), np.arange(-80,81), ax=ax2)
     plt.show()
+

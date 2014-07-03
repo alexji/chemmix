@@ -8,7 +8,7 @@ def plot_ckkp(ckkp,envname=None,sfrname=None,
               writelabelx=True,writelabely=True,
               title=None):
     if envname!=None and sfrname != None:
-        kmax,ckkp = util.load_ckkp(envname,sfrname,full_grid=True)
+        kmax,kpmax,ckkp = util.load_ckkp(envname,sfrname,full_grid=True)
     kmax = ckkp.shape[0] #kmax * (kmax+1)
 
     logminbin = -8; logmaxbin = 0
@@ -38,7 +38,7 @@ if __name__=="__main__":
     for iplot,sfrname in enumerate(sfrnames):
         irow,icol = divmod(iplot,axarr.shape[1])
         im = plot_ckkp(0,envname=envname,sfrname=sfrname,
-                       ax=axarr[irow,icol],maxx=60,maxy=110,title=sfrname,
+                       ax=axarr[irow,icol],maxx=60,maxy=200,title=sfrname,
                        writelabelx=(irow==(axarr.shape[0]-1)),writelabely=(icol==0))
     cax = fig.add_axes([.9,.1,.03,.8])
     fig.colorbar(im,cax=cax)
