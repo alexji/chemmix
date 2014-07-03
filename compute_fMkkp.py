@@ -28,6 +28,7 @@ def run_compute_ckkp(envname,sfrname,maxkmax,
     for icol in range(maxkmax):
         if np.nansum(cgrid[:,icol]) > cutoff: kpmax=icol
     print "kpmax:",kpmax
+    sys.stdout.flush()
 
     filename_ckkp = karlsson.get_ckkp_filename(envname,sfrname)
     f = h5py.File(filename_ckkp,'w')
@@ -80,4 +81,4 @@ if __name__=="__main__":
     
     for sfrname in sfrnames:
         run_compute_ckkp(envname,sfrname,options.maxkmax,numprocs=options.numprocs)
-        #run_compute_fMkkp(envname,sfrname,numprocs=options.numprocs)
+        run_compute_fMkkp(envname,sfrname,numprocs=options.numprocs)

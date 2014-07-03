@@ -115,9 +115,10 @@ if __name__=="__main__":
     popIIy  = yields.ryN06(salimf)
     elemnames = popIIy.elemnames
     
-    popIIIy_arr = [yields.ryI05N06(p) for p in [.3,.5,.7,.9,.95]] #[.1,.25,.5,.75,.9,.95]]
+    popIIIy_arr = [yields.ryI05N06(p) for p in [0,.1,.3,.5,.7,.9,1.]]
     
-    binlist = [np.arange(-7,1,.5) for i in range(6)]
+    binwidth = .1
+    binlist = [np.arange(-7,1+binwidth,binwidth) for i in range(6)]
 
     for popIIIy in popIIIy_arr:
         postfix = 'testp%0.2f' % (popIIIy.p)

@@ -5,8 +5,8 @@ import pickle
 import solveforu as sfu
 from tophat import TopHat
 
-def default_filename(envname,sfrname):
-    return envname+'_'+sfrname
+def default_filename(envname,sfrname,postfix=''):
+    return envname+'_'+sfrname+postfix
 
 def count_kkp(kmax,kpmax):
     return kmax + kpmax*(kpmax+1)/2 + (kmax-kpmax)*kpmax
@@ -95,6 +95,13 @@ def load_chemgridhist(envname,sfrname,postfix):
     mydict = pickle.load(f)
     f.close()
     return mydict
+
+def hist2d2pdf(H,xedges,yedges):
+    nbins_x = len(xedges)-1; nbins_y = len(yedges)-1
+    x_bin_sizes = (xedges[1:] - xedges[:-1]).reshape((1,nbins_x))
+    y_bin_sizes = (yedges[1:] - yedges[:-1]).reshape((nbins_y,1))
+    pdf = (H*(x_bin_sizes*y_bin_sizes).T)
+    return pdf
 
 class interp1d(object):
     """

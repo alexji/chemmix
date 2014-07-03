@@ -3,6 +3,7 @@ import pylab as plt
 import karlsson
 import util
 from scipy import stats
+from optparse import OptionParser
 
 def plot_boxplot(karr,xdistr,ydistr,name,color,ax=None,dx=.1):
     if ax==None: ax = plt.gca()
@@ -36,8 +37,11 @@ def plot_boxplot(karr,xdistr,ydistr,name,color,ax=None,dx=.1):
     return ax
 
 if __name__=="__main__":
-    envname = 'atomiccoolinghalo'
-    sfrname = 'fidTS400'
+    parser = OptionParser()
+    options,args = parser.parse_args()
+    envname,sfrname = args
+    #envname = 'atomiccoolinghalo'
+    #sfrname = 'fidTS400'
     Mhalo = 10**8; fb = 0.1551; Mmax = Mhalo*fb
     
     kmax,kpmax,ckkp = util.load_ckkp(envname,sfrname)

@@ -1,90 +1,46 @@
 import numpy as np
 import pylab as plt
-import h5py
 from optparse import OptionParser
 
 import karlsson
-from tophat import TopHat
-
-def get_subplot_num(row,col,numrows,numcols):
-    assert row < numrows; assert col < numcols
-    return 1+row*numcols+col
+import util
 
 if __name__=="__main__":
-    numrows = 5; numcols = 2
-    plotname = "cfrac_feh.png"
-    minihalofiles = [#'CHEMGRIDS/minihalo_chemgrid_N06i.hdf5',
-                     #'CHEMGRIDS/minihalo_chemgrid_N06ip0.100f100.0.hdf5',
-                     'CHEMGRIDS/minihalo_chemgrid_N06_M25.hdf5',
-                     'CHEMGRIDS/minihalo_chemgrid_HW10E1.2S4m0.hdf5',
-                     #'CHEMGRIDS/minihalo_chemgrid_HW10E1.2S4m0_a1.35.hdf5',
-                     'CHEMGRIDS/minihalo_chemgrid_HW10E1.2S4m0_flat.hdf5',
-                     #'CHEMGRIDS/minihalo_chemgrid_mixN06HW10p0.1.hdf5',
-                     'CHEMGRIDS/minihalo_chemgrid_mixN06HW10p0.5.hdf5',
-                     'CHEMGRIDS/minihalo_chemgrid_mixN06HW10p0.9.hdf5']
-    atomiccoolinghalofiles = [#'CHEMGRIDS/atomiccoolinghalo_chemgrid_N06i.hdf5',
-                              #'CHEMGRIDS/atomiccoolinghalo_chemgrid_N06ip0.100f100.0.hdf5',
-                              'CHEMGRIDS/atomiccoolinghalo_chemgrid_N06_M25.hdf5',
-                              'CHEMGRIDS/atomiccoolinghalo_chemgrid_HW10E1.2S4m0.hdf5',
-                              #'CHEMGRIDS/atomiccoolinghalo_chemgrid_HW10E1.2S4m0_a1.35.hdf5',
-                              'CHEMGRIDS/atomiccoolinghalo_chemgrid_HW10E1.2S4m0_flat.hdf5',
-                              #'CHEMGRIDS/atomiccoolinghalo_chemgrid_mixN06HW10p0.1.hdf5',
-                              'CHEMGRIDS/atomiccoolinghalo_chemgrid_mixN06HW10p0.5.hdf5',
-                              'CHEMGRIDS/atomiccoolinghalo_chemgrid_mixN06HW10p0.9.hdf5']
-    yieldlabels = [#'N06',
-                   #'N06 Cx100 (p=.1)',
-                   'N06 M25',
-                   'HW10 a2.35', 
-                   #'HW10 a1.35', 
-                   'HW10 flat', 
-                   #'NHW (p=.1)', 
-                   'NHW (p=.5)',
-                   'NHW (p=.9)']
+    parser = OptionParser()
+    parser.add_option('--save',action='store_true',dest='save',default=False)
+    parser.add_option('-c','--cfecrit',action='store',type="float",dest='CFecrit',default=0.75)
+    options,args = parser.parse_args()
+    envname,sfrname,postfix = args
+    
+    histdict = util.load_chemgridhist(envname,sfrname,postfix)
+    yII = histdict['yII']
+    elemnames = np.array(yII.elemnames)
+    numyields = len(elemnames)
+    CFecrit = options.CFecrit
+    iC  = np.where('C'==elemnames)[0][0]  #0
+    iFe = np.where('Fe'==elemnames)[0][0] #5
+    assert iC < iFe 
 
-    allfiles = [minihalofiles,atomiccoolinghalofiles]
+    histdict = util.load_chemgridhist(envname,sfrname,postfix)
+    H,edgesC,edgesFe = histdict[(iFe,iC)]
+    pdf = util.hist2d2pdf(H,edgesC,edgesFe)
 
-    assert numcols == len(allfiles)
-    for filelist in allfiles: assert numrows == len(filelist)
+    H = H.T #put Fe on the X axis
+    midFe = (edgesFe[1:]+edgesFe[:-1])/2.
+    midC  = (edgesC[1:]+edgesC[:-1])/2.
 
-    elemnames = ['C', 'O', 'Mg', 'Si', 'Ca', 'Fe']
-    bins = np.arange(-6.0,-1.0+0.01,0.1)
-
-    plt.figure(figsize=(8,10))
-    # Minihalo column
-    for col,filelist in enumerate(allfiles):
-        if col == 0: 
-            kmax = 2
-            paramfn = karlsson.params_minihalo
-            plt.subplot(numrows,numcols,1); 
-            plt.title(r'minihalo $k_{\rm max}='+str(kmax)+'$')
-        if col == 1: 
-            kmax = 5
-            paramfn = karlsson.params_atomiccoolinghalo
-            plt.subplot(numrows,numcols,2); 
-            plt.title(r'atomic cooling halo $k_{\rm max}='+str(kmax)+'$')
-        for row,filename in enumerate(filelist):
-            plt.subplot(numrows,numcols,get_subplot_num(row,col,numrows,numcols))
-            f = h5py.File(filename,'r')
-            chemarr = np.array(f['chemgrid'])
-            f.close()
-            chemarr,ck = karlsson.weight_chemgrid(kmax,chemarr,paramfn,
-                                                  elemnames=elemnames,verbose=True)
-            FeH,Cfrac,CfracErr = karlsson.compute_cfrac(chemarr[:,0],chemarr[:,5],
-                                                        bins=bins)
-            h,x = np.histogram(chemarr[:,5],bins=bins)
-            h = h/float(np.max(h))
-            plt.bar(x[:-1],h,np.diff(x),
-                    edgecolor='#D3D3D3',color='#D3D3D3')
-            plt.errorbar(FeH,Cfrac,yerr=CfracErr,
-                         color='black',marker='.',drawstyle='steps-mid')
-            plt.ylim((0,1.1)); plt.xlim((np.min(bins),np.max(bins)))
-            #plt.ylabel(r'$N$, $f_{Crich}$')
-
-            plt.plot([-4,-3],[0.75,0.3],'bo-')
-            if col == 0: plt.ylabel(yieldlabels[row])
-            else: plt.gca().yaxis.set_ticklabels([])
-            if row == numrows-1: plt.xlabel('[Ca/H]') #plt.xlabel('[Fe/H]')
-            else: plt.gca().xaxis.set_ticklabels([])
-    plt.subplots_adjust(hspace=0,wspace=0)
-    #plt.savefig("PLOTS/"+plotname)
-    plt.show()
+    cfrac = np.zeros(len(midFe))
+    for i,Fe in enumerate(midFe):
+        iiCrich = midC-Fe > CFecrit
+        cfrac[i] = np.sum(H[i,iiCrich])/np.sum(H[i,:])
+    
+    fig = plt.figure()
+    ax = plt.gca()
+    #ax.plot(midFe,cfrac,'k.-',drawstyle='steps-mid')
+    ax.plot(edgesFe[:-1],cfrac,'k-',drawstyle='steps')
+    ax.set_ylim((0,1.1))
+    ax.set_xlabel('[Fe/H]'); ax.set_ylabel('cfrac')
+    if options.save: 
+        plt.savefig('PLOTS/cfrac_'+util.default_filename(envname,sfrname,postfix)+'.png')
+    else: plt.show()
+        
