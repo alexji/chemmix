@@ -105,9 +105,7 @@ if __name__=="__main__":
     parser.add_option('--savegrid',action='store_true',dest='savegrid',default=False)
     options,args = parser.parse_args()
 
-    #envname = args[0]; sfrname = args[1]
-    envname = 'atomiccoolinghalo'
-    sfrname = 'fidTS300'
+    envname = args[0]; sfrname = args[1]
     fb = .1551; Mhalo = karlsson.envparams(envname)[0]
     Mmax = fb * Mhalo
 

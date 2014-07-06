@@ -28,7 +28,7 @@ def load_Vmix(envname,get_th=False,get_thrho=False):
     if get_th: return th,Vmix
     return Vmix
 
-def get_sfrparams(sfrname,verbose=False):
+def get_sfrparams(sfrname,envname=None,verbose=False):
     try:
         name,ts = sfrname.split('TS')
     except ValueError:
@@ -55,6 +55,16 @@ def get_sfrparams(sfrname,verbose=False):
         u0III /= 10.; u0II /= 10.
     elif 'uIIItenth' in name:
         u0III /= 10.
+    elif 'flat' in name:
+        assert envname != None
+        Mhalo,zvir,vturb,lturb,nSN,trecovery,logMdil = karlsson.envparams(envname)
+        Dt,uSN = karlsson.get_Dt_uSN(vturb,lturb,nSN,trecovery)
+        ttII = ttIII + trecovery
+        u0III = uSN
+        if 'flatfix' in name:
+            pass
+        elif 'flat10x' in name:
+            u0III = uSN; u0II = 10*u0III
     else:
         raise ValueError("Invalid sfrname: "+sfrname)
 

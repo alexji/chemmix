@@ -6,17 +6,30 @@ import karlsson
 from optparse import OptionParser
 import util
 import time
+import functools
     
 def compute_umufns(envname,sfrname,tmin=.01,tmax=1000.,tres=.1):
     th,Vmixfn = util.load_Vmix(envname,get_th=True)
     label = util.get_sfrlabel(envname,sfrname)
-    u0II,u0III,ttII,ttIII,tstop = util.get_sfrparams(sfrname)
+    u0II,u0III,ttII,ttIII,tstop = util.get_sfrparams(sfrname,envname=envname)
     tarr = np.arange(tmin,tmax,tres)
 
-    numsf = np.sum(tarr>ttIII); numskip = len(tarr)-numsf
-    u_init = np.concatenate((np.zeros(numskip),np.logspace(-2,-8,numsf)))
-    saveuIIIdata(label,tarr,u_init,Vmixfn,th,u0III,ttIII,tstop)
-    saveuIIdata(label,Vmixfn,th,u0II,ttII,tstop)
+    if 'flat' in sfrname:
+        uIII = functools.partial(flattemplate,u0=u0III,tstart=ttIII,tstop=ttII)
+        uII  = functools.partial(flattemplate,u0=u0II,tstart=ttII,tstop=tstop)
+        print "Getting mufns for "+sfrname+"..."; start = time.time()
+        muIII = karlsson.get_mufn(Vmixfn,uIII,tarr=tarr)
+        muII  = karlsson.get_mufn(Vmixfn,uII,tarr=tarr)
+        print "Took %f" % (time.time()-start)
+        uIIarr  = uII(tarr);  muIIarr  = muII(tarr)
+        uIIIarr = uIII(tarr); muIIIarr = muIII(tarr)
+        np.savez('SFRDATA/'+label+'_uII.npz',tarr=tarr, uarr=uIIarr, muarr=muIIarr)
+        np.savez('SFRDATA/'+label+'_uIII.npz',tarr=tarr,uarr=uIIIarr,muarr=muIIIarr)
+    else:
+        numsf = np.sum(tarr>ttIII); numskip = len(tarr)-numsf
+        u_init = np.concatenate((np.zeros(numskip),np.logspace(-2,-8,numsf)))
+        saveuIIIdata(label,tarr,u_init,Vmixfn,th,u0III,ttIII,tstop)
+        saveuIIdata(label,Vmixfn,th,u0II,ttII,tstop)
 
 def plot_sfu(label,showplot=True):
     import pylab as plt
@@ -73,6 +86,15 @@ def loadmuIIIfn(label,retarrays=False):
     fn = util.interp1d(tarr,muarr,bounds_error=False,fill_value=0)
     if retarrays: return fn,tarr,muarr
     return fn
+
+def flattemplate(t,u0,tstart,tstop):
+    try:
+        if t>=tstart and t<=tstop: return u0
+        return 0.
+    except:
+        outarr = np.zeros(len(t))
+        outarr[np.logical_and(t>=tstart, t<=tstop)] = u0
+        return outarr
 
 def Qp(muIII):
     return np.exp(-muIII-(muIII**2)/4.)

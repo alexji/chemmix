@@ -57,9 +57,9 @@ def run_compute_fMkkp(envname,sfrname,
     
     filename = 'MMIXDISTR/'+envname+'_'+sfrname+'_fMkkp.npy'
     start = time.time()
-    fMkkp = karlsson.calc_fMkkp_onearr(kmax,kpmax,DMlist,Vmix,
-                                       wII,muII,uII,wIII,muIII,uIII,
-                                       numprocs=numprocs)
+    fMkkp = karlsson.calc_fMkkp(kmax,kpmax,DMlist,Vmix,
+                                wII,muII,uII,wIII,muIII,uIII,
+                                numprocs=numprocs)
     print "calc_fMkkp:",time.time()-start
     np.save(filename,fMkkp)
 

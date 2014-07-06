@@ -406,34 +406,6 @@ def calc_fMkkp(kmax,kpmax,DMlist,VMIX,
                 fMkkp[ik,ikp,:] = fMkkp[ik,ikp,:]/np.sum(fMkkp[ik,ikp,:])
     return fMkkp
 
-#def calc_fMkkp(k,kp,Mbins,DMlist,VMIX,
-#               WISMII,MUII,UII,
-#               WISMIII,MUIII,UIII,
-#               numprocs=1,
-#               normalize=True):
-#    assert k > 0 and kp > 0 and kp <= k
-#    nbins = len(Mbins)-1
-#    assert nbins == len(DMlist)
-#
-#    if numprocs == 1:
-#        fMkkp = np.zeros(nbins)
-#        for i,DM in enumerate(DMlist):
-#            fMkkp[i] = _calc_fMkkp(DM,k,kp,VMIX,WISMII,MUII,UII,WISMIII,MUIII,UIII)
-#    else:
-#        assert numprocs > 1
-#        pool = Pool(numprocs)
-#        this_func = functools.partial(_calc_fMkkp,k=k,kp=kp,
-#                                      VMIX=VMIX,
-#                                      WISMII=WISMII,MUII=MUII,UII=UII,
-#                                      WISMIII=WISMIII,MUIII=MUIII,UIII=UIII)
-#        fMkkp = pool.map(this_func,DMlist)
-#        pool.close(); pool.join()
-#        fMkkp = np.array(fMkkp)
-#        
-#    if normalize:
-#        fMkkp = fMkkp/np.sum(fMkkp)
-#    return fMkkp
-
 def hist_chemgridkkp(ckkp,chemgrid,binlist,elemnames,verbose=False):
     Nstars,numyields,kmax,kpmaxp1 = chemgrid.shape
     assert numyields == len(elemnames) and numyields == len(binlist)

@@ -38,7 +38,8 @@ if __name__=="__main__":
     for iplot,sfrname in enumerate(sfrnames):
         irow,icol = divmod(iplot,axarr.shape[1])
         im = plot_ckkp(0,envname=envname,sfrname=sfrname,
-                       ax=axarr[irow,icol],maxx=60,maxy=200,title=sfrname,
+                       ax=axarr[irow,icol],maxx=60,maxy=500,
+                       title=sfrname,
                        writelabelx=(irow==(axarr.shape[0]-1)),writelabely=(icol==0))
     cax = fig.add_axes([.9,.1,.03,.8])
     fig.colorbar(im,cax=cax)
