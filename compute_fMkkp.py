@@ -68,11 +68,19 @@ if __name__=="__main__":
     parser.add_option('-j','--numprocs',action='store',type='int',dest='numprocs',default=1)
     parser.add_option('--maxkmax',action='store',type='int',dest='maxkmax',default=150)
     parser.add_option('--runfid',action='store_true',dest='runfid',default=False)
+    parser.add_option('--runff',action='store_true',dest='runff',default=False)
+    parser.add_option('--runfx',action='store_true',dest='runfx',default=False)
     options,args = parser.parse_args()
     
     if options.runfid:
         envname = 'atomiccoolinghalo'
         sfrnames = ['fidTS'+str(tcut) for tcut in [300,400,500,600,700,800,900,1000]]
+    elif options.runff:
+        envname = 'atomiccoolinghalo'
+        sfrnames = ['flatfixTS'+str(tcut) for tcut in [500,600,700,800,900,1000]]
+    elif options.runfx:
+        envname = 'atomiccoolinghalo'
+        sfrnames = ['flat10xTS'+str(tcut) for tcut in [500,600,700,800,900,1000]]
     else:
         envname = args[0]; sfrname = args[1]
         print "envname:",envname

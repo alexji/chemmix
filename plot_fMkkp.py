@@ -48,7 +48,7 @@ if __name__=="__main__":
     Mplot = np.load(karlsson.get_Mplotkkp_filename(envname,sfrname))
     fMkkp = np.load(karlsson.get_fMkkp_filename(envname,sfrname))
     plt.figure()
-    for kp in range(kmax+1):
+    for kp in range(kpmax+1):
         karr = np.arange(kp+1,kmax+1)
         ax = plot_boxplot(karr,Mplot,fMkkp[:,kp,:],str(kp),'black')
         ax.set_xlim((0,kmax+1)); ax.set_xlabel(r'$k$')

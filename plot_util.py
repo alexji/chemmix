@@ -127,6 +127,8 @@ def density_contour(xdata, ydata, xbins, ybins, ax=None, my2dhist=None, **contou
     y_bin_sizes = (yedges[1:] - yedges[:-1]).reshape((nbins_y,1))
     
     pdf = (H*(x_bin_sizes*y_bin_sizes).T)
+    # if H was unnormalized, need to redo pdf
+    if np.abs(np.sum(pdf)-1) > 10**-6: pdf = H/float(np.sum(H))
     
     one_sigma = so.brentq(find_confidence_interval, 0., 1., args=(pdf, 0.68))
     two_sigma = so.brentq(find_confidence_interval, 0., 1., args=(pdf, 0.95))

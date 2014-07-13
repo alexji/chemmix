@@ -22,6 +22,13 @@ if __name__=="__main__":
     #binlist = histdict['binlist']
     elemnames = yII.elemnames
     numyields = len(elemnames)
+    #TODO
+    #import pickle
+    #f = open('/spacebase/data/alexji/karlsson-model/tmp.hist','r')
+    #histdict = pickle.load(f)
+    #f.close()
+    #elemnames = ['C','O','Mg','Si','Ca','Fe']
+    #numyields = 6
 
     fig,axarr = plt.subplots(numyields,numyields,sharex=True)
     for irow,erow in enumerate(elemnames):
@@ -38,6 +45,7 @@ if __name__=="__main__":
                 ax.set_ylim((np.min(y),np.max(y)))
             elif irow == icol:
                 h,x = histdict[key]
+                if np.sum(h) > 10: h = h/float(np.sum(h))
                 plot1dhist(h,x,ax=ax)
                 ax.set_xlim((np.min(x),np.max(x)))
                 ax.set_ylim((0,np.max(h)*1.1))

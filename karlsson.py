@@ -50,6 +50,14 @@ def envparams(envname):
         Mhalo = 10**8; zvir = 10
         nSN = 10; trecovery = 300
         logMdil=4
+    elif envname=='atomiccoolinghalo_lowDt':
+        Mhalo = 10**8; zvir = 10
+        nSN = 10; trecovery = 300
+        logMdil=5
+    elif envname=='atomiccoolinghalo_lowDt4':
+        Mhalo = 10**8; zvir = 10
+        nSN = 10; trecovery = 300
+        logMdil=4
     elif envname=='atomiccoolinghalo_lowmass':
         Mhalo = 10**7.4; zvir = 10
         nSN = 10; trecovery = 300
@@ -71,6 +79,7 @@ def envparams(envname):
 
     th = TopHat(Mhalo=Mhalo,zvir=zvir)
     lturb = th.Rvir/10.; vturb = th.vvir
+    if 'lowDt' in envname: vturb = vturb/10.
     return Mhalo,zvir,vturb,lturb,nSN,trecovery,logMdil
 
 def params_k08():
@@ -186,16 +195,28 @@ def uSN_G08_const(t):
     """ 10 SN in ~400 Myr over ~5 kpc^3 = .005 SN/kpc^3/Myr """
     return .005
 
+#def _wISM_K05_a(k,mu):
+#    return np.exp(-mu)*mu**k/factorial(k) 
+#def _wISM_K05_b(k,mu):
+#    return np.exp(-mu + k*np.log(mu)-k*np.log(k)+k-.5*np.log(2*np.pi*k))
+
 def _wISM_K05(k,mu):
-    return -mu + k*np.log(mu)-k*np.log(k)+k-.5*np.log(2*np.pi*k)
-
-def _wISM_K05_a(k,mu):
-    return np.exp(-mu)*mu**k/factorial(k) 
-def _wISM_K05_b(k,mu):
-    return np.exp(-mu + k*np.log(mu)-k*np.log(k)+k-.5*np.log(2*np.pi*k))
-
-def wISM_K05(k,mu):
     return np.exp(k*np.log(mu)-scipy.special.gammaln(k+1)-mu)
+def _wISM_K05_mu0(k):
+    if k==0: return 1
+    return 0
+    
+def wISM_K05(k,mu):
+    try: #mu is an array; assume k is never an array
+        output = np.empty(len(mu))
+        imu0 = (mu==0)
+        output[imu0]  = _wISM_K05_mu0(k)
+        output[~imu0] = _wISM_K05(k,mu[~imu0])
+        return output
+    except: #mu is a scalar
+        if mu==0: return _wISM_K05_mu0(k)
+        return _wISM_K05(k,mu)
+    #return np.exp(k*np.log(mu)-scipy.special.gammaln(k+1)-mu)
     #return np.exp(-mu)*mu**k/factorial(k) 
     #return scipy.stats.poisson.pmf(k,mu) 
 
@@ -363,16 +384,24 @@ def _calc_fMkkp(DM,k,kp,VMIX,WISMII,MUII,UII,WISMIII,MUIII,UIII):
     muIIarr = MUII(t)
     muIIIarr= MUIII(t)
     
-    #if k-kp-1 >= 0:
-    try:
-        wprodII = WISMIII(kp,muIIIarr)*WISMII(k-kp-1,muIIarr)*UII(t-tau)
-    except:wprodII = 0
-    #if kp-1 >= 0:
-    try:
-        wprodIII= WISMIII(kp-1,muIIIarr)*WISMII(k-kp,muIIarr)*UIII(t-tau)
-    except: wprodIII = 0
+    if k-kp-1 >= 0: wprodII = WISMIII(kp,muIIIarr)*WISMII(k-kp-1,muIIarr)*UII(t-tau)
+    else: wprodII = 0
+    if kp-1 >= 0: wprodIII = WISMIII(kp-1,muIIIarr)*WISMII(k-kp,muIIarr)*UIII(t-tau)
+    else: wprodIII = 0
+
     sfr = UII(t)
     return np.sum(dt*dtau*Vmixarr*(wprodII+wprodIII)*sfr)
+    #if np.isnan(output):
+    #    print "---warning (%i,%i): has nan" % (k,kp)
+    #    #nanvmix = np.sum(np.isnan(Vmixarr))
+    #    #nanmuii = np.sum(np.isnan(muIIarr))
+    #    #nanmuiii = np.sum(np.isnan(muIIIarr))
+    #    #nanwii = np.sum(np.isnan(wprodII))
+    #    #nanwiii = np.sum(np.isnan(wprodIII))
+    #    #nansfr = np.sum(np.isnan(sfr))
+    #    #print "Vmix: %i muII %i muIII %i wprodII %i wprodIII %i" % (nanvmix,nanmuii,nanmuiii,nanwii,nanwiii,nansfr)
+    #    output = np.nansum(dt*dtau*Vmixarr*(wprodII+wprodIII)*sfr)
+    #return output
 
 def _calc_fMkkp_binsubset(DM,kmax,kpmax,VMIX,WISMII,MUII,UII,WISMIII,MUIII,UIII):
     outarr = np.zeros((kmax,kpmax+1,1)) #k,kp,Mbin
@@ -403,7 +432,8 @@ def calc_fMkkp(kmax,kpmax,DMlist,VMIX,
     if normalize:
         for ik in range(kmax):
             for ikp in range(min(ik+1,kpmax)+1):
-                fMkkp[ik,ikp,:] = fMkkp[ik,ikp,:]/np.sum(fMkkp[ik,ikp,:])
+                #print "(%i,%i) norm = %f" % (ik+1,ikp,np.nansum(fMkkp[ik,ikp,:]))
+                fMkkp[ik,ikp,:] = fMkkp[ik,ikp,:]/np.nansum(fMkkp[ik,ikp,:])
     return fMkkp
 
 def hist_chemgridkkp(ckkp,chemgrid,binlist,elemnames,verbose=False):
@@ -432,13 +462,32 @@ def hist_chemgridkkp(ckkp,chemgrid,binlist,elemnames,verbose=False):
             if irow==icol: 
                 outdict[(irow,icol)] = np.histogram(chemgrid[:,icol,:,:],
                                                     bins=binlist[icol],
-                                                    weights=weights,normed=True)
+                                                    weights=weights,density=True)
             else:
                 #note weights[:,icol,:,:] == weights[:,irow,:,:]
                 myhist2d = np.histogram2d(chemgrid[:,icol,:,:].reshape(-1),
                                           chemgrid[:,irow,:,:].reshape(-1),
                                           bins=[binlist[icol],binlist[irow]],
                                           weights=weights.reshape(-1),normed=True)
+                outdict[(irow,icol)] = myhist2d
+    return outdict
+
+def hist_chemgridkkp_one(yieldnumratio,binlist,elemnames,verbose=False):
+    Nstars,numyields = yieldnumratio.shape
+    assert numyields == len(elemnames) and numyields == len(binlist)
+
+    # do NOT normalize histograms because will be weighted later
+    outdict = {}
+    for irow,erow in enumerate(elemnames):
+        for icol,ecol in enumerate(elemnames):
+            if icol > irow: continue
+            if irow==icol: 
+                outdict[(irow,icol)] = np.histogram(yieldnumratio[:,icol],
+                                                    bins=binlist[icol])
+            else:
+                myhist2d = np.histogram2d(yieldnumratio[:,icol],
+                                          yieldnumratio[:,irow],
+                                          bins=[binlist[icol],binlist[irow]])
                 outdict[(irow,icol)] = myhist2d
     return outdict
 
