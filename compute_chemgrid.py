@@ -8,7 +8,6 @@ import sys
 
 import karlsson
 import util
-import gc
 import pickle
 import subprocess
 import resource
@@ -19,8 +18,7 @@ def _get_tmpdictname(tasknum,tmplabel):
 def _run_compute_chemgrid(tasknum,kmax,kpmax,Mplot,fMkkp,yieldII,yieldIII,masstonum,Nstars,
                           timethis=True,
                           weighthist=False,binlist=None,tmplabel=''):
-    gc.collect()
-    if tmplabel != '': savetmpfiles=True
+    savetmpfiles = (tmplabel != '')
     if timethis: start = time.time()
     numyields = yieldII.numyields
 
@@ -37,6 +35,8 @@ def _run_compute_chemgrid(tasknum,kmax,kpmax,Mplot,fMkkp,yieldII,yieldIII,massto
         mixing_massesII = karlsson.draw_from_distr((k-kp)*Nstars,Mplot,this_fMkkp)
         yieldarrII = yieldII.draw_yields((k-kp)*Nstars)
         yieldratioII = np.reshape((yieldarrII.T / mixing_massesII).T, (Nstars,(k-kp),numyields))
+    yieldarrII = None; yieldarrIII = None
+    mixing_massesII = None; mixing_massesIII = None
 
     #yieldratio has shape (Nstars,k,numyields)
     if yieldratioII != None and yieldratioIII != None:
@@ -48,7 +48,6 @@ def _run_compute_chemgrid(tasknum,kmax,kpmax,Mplot,fMkkp,yieldII,yieldIII,massto
     else:
         raise ValueError("Somehow invalid k,kp: k=%i, kp=%i" % (k,kp))
     yieldratioII = None; yieldratioIII = None
-    gc.collect()
 
     #yieldratio has shape (Nstars,numyields)
     yieldratio = np.sum(yieldratio,axis=1) #mass ratios
@@ -140,12 +139,12 @@ def run_compute_chemgrid(envname,sfrname,yII,yIII,
             for icol,ecol in enumerate(elemnames):
                 if icol > irow: continue
                 for i,thisdict in enumerate(chemlist):
+                    ik,ikp = divmod(i,kpmax+1); k = ik+1; kp = ikp
+                    if kp > k: continue
                     if savetmpfiles:
                         f = open(_get_tmpdictname(i,tmplabel),'r')
                         thisdict = pickle.load(f)
                         f.close()
-                    ik,ikp = divmod(i,kpmax+1); k = ik+1; kp = ikp
-                    if kp > k: continue
                     this_c = ckkp[ik,ikp]
                     if irow==icol:
                         h,x = thisdict[(irow,icol)]
@@ -165,8 +164,12 @@ def run_compute_chemgrid(envname,sfrname,yII,yIII,
                             oh,ox,oy = outdict[(irow,icol)]
                             assert (tx==ox).all() and (ty==oy).all()
                             outdict[(irow,icol)] = (oh + th*this_c,ox,oy)
-                    if savetmpfiles:
-                        subprocess.call(['rm '+_get_tmpdictname(i,tmplabel)],shell=True)
+        if savetmpfiles:
+            for i in range(len(chemlist)):
+                ik,ikp = divmod(i,kpmax+1); k = ik+1; kp = ikp
+                if kp > k: continue
+                subprocess.call(['rm '+_get_tmpdictname(i,tmplabel)],shell=True)
+
         print "Time to weight/combine hists: %f" % (time.time()-start)
     return outdict
 
@@ -206,7 +209,7 @@ if __name__=="__main__":
         postfix = 'p%0.2f' % (popIIIy.p)
         kmax,kpmax,ckkp = util.load_ckkp(envname,sfrname)
         chemgrid = run_compute_chemgrid(envname,sfrname,popIIy,popIIIy,Mmax,
-                                        savegrid=options.savegrid,Nstars=10**6,
+                                        savegrid=options.savegrid,Nstars=10**5,
                                         numprocs=options.numprocs,postfix=postfix,
                                         weighthist=options.weight,binlist=binlist,
                                         savetmpfiles=options.savetmpfiles)
