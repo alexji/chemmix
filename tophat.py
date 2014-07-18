@@ -6,7 +6,8 @@
 
 import numpy as np
 from scipy.optimize import brentq
-from scipy.interpolate import interp1d
+#from scipy.interpolate import interp1d
+from alexinterp import interp1d
 from scipy.integrate import quad
 
 def cosmo_age(z,Ol=0.7,Om=0.3,h0=0.7):
@@ -94,10 +95,9 @@ class TopHat:
     def get_n_of_t_fn(self,Nres=300):
         """ return interpolated density fn in cm^-3 """
         tmax = self.B*2*np.pi
-        #tarr = np.concatenate((np.logspace(-4,np.log10(tmax/Nres),Nres/2),np.linspace(tmax/Nres,tmax,Nres/2)))
         tarr = np.logspace(-4,np.log10(tmax),Nres,endpoint=False)
         narr = self.n_of_t(tarr)
-        tarr = np.concatenate((tarr,[100000.])); narr = np.concatenate((narr,[self.nvir]))
+        tarr = np.concatenate(([0],tarr,[100000.])); narr = np.concatenate(([10.**100],narr,[self.nvir]))
         if self.verbose:
             print "minimum t:",tarr[0]
         return interp1d(tarr,narr)
@@ -107,10 +107,9 @@ class TopHat:
         return self.mu * 1.673*10**-24 * self.n_of_t(t)
     def get_rho_of_t_fn(self,Nres=300):
         tmax = self.B*2*np.pi
-        #tarr = np.concatenate((np.logspace(-4,np.log10(tmax/Nres),Nres/2),np.linspace(tmax/Nres,tmax,Nres/2)))
         tarr = np.logspace(-4,np.log10(tmax),Nres,endpoint=False)
         rhoarr = self.rho_of_t(tarr)
-        tarr = np.concatenate((tarr,[100000.])); rhoarr = np.concatenate((rhoarr,[self.mu*1.678*(10**-24)*self.nvir]))
+        tarr = np.concatenate(([0],tarr,[100000.])); rhoarr = np.concatenate(([10.**100],rhoarr,[self.mu*1.678*(10**-24)*self.nvir]))
         if self.verbose:
             print "minimum t:",tarr[0]
         return interp1d(tarr,rhoarr)
