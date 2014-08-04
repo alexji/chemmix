@@ -145,10 +145,13 @@ def density_contour(xdata, ydata, xbins, ybins, ax=None, my2dhist=None, **contou
     
     return contour
  
-def plot1dhist(h,x,ax=None,**kwargs):
+def plot1dhist(h,x,ax=None,fill=False,**kwargs):
     if ax==None: ax = plt.gca()
     xplot = (x[:-1]+x[1:])/2.
-    ax.plot(xplot,h,drawstyle='steps-mid',**kwargs)
+    if fill:
+        ax.bar(x[:-1],h,np.diff(x),**kwargs)
+    else:
+        ax.plot(xplot,h,drawstyle='steps-mid',**kwargs)
 
 def test_density_contour():
     norm = np.random.normal(10., 15., size=(12540035, 2))

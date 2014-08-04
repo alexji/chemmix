@@ -1,6 +1,7 @@
 import numpy as np
 from scipy import integrate
 #from scipy.interpolate import interp1d
+from alexinterp import interp1d
 from tophat import TopHat
 import karlsson
 from optparse import OptionParser
@@ -54,20 +55,20 @@ def saveuIIdata(label,Vmixfn,th,u0,tthresh,tstop):
     uarr[tarr < tthresh] = 0.
     uarr[tarr > tstop]   = 0.
 
-    ufn = util.interp1d(tarr,uarr,bounds_error=False,fill_value=0)
+    ufn = interp1d(tarr,uarr,bounds_error=False,fill_value=0)
     mufn = karlsson.get_mufn(Vmixfn,ufn,tarr=tarr)
     muarr = mufn(tarr)
     np.savez('SFRDATA/'+label+'_uII.npz',tarr=tarr,uarr=uarr,muarr=muarr)
 def loaduIIfn(label,retarrays=False):
     npz = np.load('SFRDATA/'+label+'_uII.npz')
     uarr = npz['uarr']; tarr = npz['tarr']
-    fn = util.interp1d(tarr,uarr,bounds_error=False,fill_value=0)
+    fn = interp1d(tarr,uarr,bounds_error=False,fill_value=0)
     if retarrays: return fn,tarr,uarr
     return fn
 def loadmuIIfn(label,retarrays=False):
     npz = np.load('SFRDATA/'+label+'_uII.npz')
     muarr = npz['muarr']; tarr = npz['tarr']
-    fn = util.interp1d(tarr,muarr,bounds_error=False,fill_value=0)
+    fn = interp1d(tarr,muarr,bounds_error=False,fill_value=0)
     if retarrays: return fn,tarr,muarr
     return fn
 
@@ -77,13 +78,13 @@ def saveuIIIdata(label,tarr,u_init,Vmixfn,th,u0,tthresh,tstop):
 def loaduIIIfn(label,retarrays=False):
     npz = np.load('SFRDATA/'+label+'_uIII.npz')
     uarr = npz['uarr']; tarr = npz['tarr']
-    fn = util.interp1d(tarr,uarr,bounds_error=False,fill_value=0)
+    fn = interp1d(tarr,uarr,bounds_error=False,fill_value=0)
     if retarrays: return fn,tarr,uarr
     return fn
 def loadmuIIIfn(label,retarrays=False):
     npz = np.load('SFRDATA/'+label+'_uIII.npz')
     muarr = npz['muarr']; tarr = npz['tarr']
-    fn = util.interp1d(tarr,muarr,bounds_error=False,fill_value=0)
+    fn = interp1d(tarr,muarr,bounds_error=False,fill_value=0)
     if retarrays: return fn,tarr,muarr
     return fn
 
@@ -120,7 +121,7 @@ def solveforuIII(tarr,u_init,Vmixfn,th,u0,
     convergecount = 0
     for i in xrange(itermax):
         if verbose: start = time.time()
-        ufn = util.interp1d(tarr,uarr,bounds_error=False,fill_value=0)
+        ufn = interp1d(tarr,uarr,bounds_error=False,fill_value=0)
         mufn = karlsson.get_mufn(Vmixfn,ufn,
                                  tarr=tarr)
         muarr = mufn(tarr)

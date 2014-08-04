@@ -92,7 +92,7 @@ class TopHat:
             assert (t >= 0).all()# and (t <= tmax).all()
         eta = self.get_eta_from_t(t)
         return self.n_of_eta(eta)
-    def get_n_of_t_fn(self,Nres=300):
+    def get_n_of_t_fn(self,Nres=2000):
         """ return interpolated density fn in cm^-3 """
         tmax = self.B*2*np.pi
         tarr = np.logspace(-4,np.log10(tmax),Nres,endpoint=False)
@@ -105,7 +105,7 @@ class TopHat:
         """ return mass density in g/cm^3 """
         # proton mass in grams = 1.673 * 10^-24
         return self.mu * 1.673*10**-24 * self.n_of_t(t)
-    def get_rho_of_t_fn(self,Nres=300):
+    def get_rho_of_t_fn(self,Nres=2000):
         tmax = self.B*2*np.pi
         tarr = np.logspace(-4,np.log10(tmax),Nres,endpoint=False)
         rhoarr = self.rho_of_t(tarr)

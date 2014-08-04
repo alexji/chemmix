@@ -17,6 +17,24 @@ def map_elemnames_to_asplund09(elemnames):
                'Ca': 6.34, 'Fe': 7.50}
     return np.array([elemmap[elem]-12.0 for elem in elemnames])
 
+def convert_to_solar(elemnames,chemarr):
+    assert len(elemnames)==chemarr.shape[1]
+    chemarr = np.log10(chemarr)
+    asplund09ZHsun = map_elemnames_to_asplund09(elemnames)
+    if len(chemarr.shape)==2: #single chemarr
+        for z in range(len(elemnames)):
+            chemarr[:,z] -= asplund09ZHsun[z]
+    elif len(chemarr.shape)==3: #chemarr with multiple k
+        for k in range(chemarr.shape[2]):
+            for z in range(len(elemnames)):
+                chemarr[:,z,k] -= asplund09ZHsun[z]
+    elif len(chemarr.shape)==4: #chemarr with two k
+        for kII in range(chemarr.shape[2]):
+            for kIII in range(chemarr.shape[3]):
+                for z in range(len(elemnames)):
+                    chemarr[:,z,kII,kIII] -= asplund09ZHsun[z]
+    return chemarr
+
 class yieldsbase(object):
     """ Base functions for yield classes """
     def clean_sn_type_input(self,sn_type):
