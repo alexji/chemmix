@@ -49,8 +49,8 @@ if __name__=="__main__":
     if 'minihalo' in envname: 
         Mhalo = 10**6
         fb = 0.1551; Mmax = Mhalo*fb
-        ylim=(0,1.)
-        xlim=((10**4.5,10**5.5))
+        ylim=(0,.1)
+        xlim=((10**4.0,10**5.5))
     
     k2max,k3max,cgrid = util.load_ckk(envname,sfrname)
     Mplot = np.load(util.fname_Mplotkk(envname,sfrname))
@@ -60,9 +60,11 @@ if __name__=="__main__":
     fig.subplots_adjust(hspace=0,wspace=0)
     for kII in range(k2max+1):
         for kIII in range(k3max+1):
+            ax = axes[kII,kIII]
+            if kII==0: ax.set_title(r'$k_{III}='+str(kIII)+r'$')
+            if kIII==0: ax.set_ylabel(r'$k_{II}='+str(kII)+r'$')
             if kII+kIII==0: 
                 continue
-            ax = axes[kII,kIII]
             ax.plot([Mmax,Mmax],[0,1.],'c:',lw=2)
             ax.plot(Mplot,fMkk2[kII,kIII,:])
             ax.plot(Mplot,fMkk3[kII,kIII,:])

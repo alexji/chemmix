@@ -3,6 +3,7 @@ import h5py
 import pickle
 import sfrmodel as sfu
 from tophat import TopHat
+import scipy.special
 
 import backgroundmodel
 

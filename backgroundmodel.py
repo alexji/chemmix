@@ -11,8 +11,8 @@ from tophat import TopHat
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.integrate import trapz
 
-def get_Vmixfn(tarr,th,Dt,Vmax,getVmixdot=False):
-    sigEfn = get_sigEfn(tarr,th)
+def get_Vmixfn(tarr,th,Dt,Vmax,getVmixdot=False,E51=1.):
+    sigEfn = get_sigEfn(tarr,th,E51=E51)
     Vmixarr = Vmix_base(tarr,Dt,sigEfn,Vmax)
     Vmixfn = interp1d(tarr,Vmixarr)
     if getVmixdot:
@@ -23,8 +23,8 @@ def get_Vmixfn(tarr,th,Dt,Vmax,getVmixdot=False):
         return Vmixfn,Vmixdotfn
     else:
         return Vmixfn
-def get_Vmixarr(tarr,th,Dt,Vmax,getVmixdot=False):
-    sigEfn = get_sigEfn(tarr,th)
+def get_Vmixarr(tarr,th,Dt,Vmax,getVmixdot=False,E51=1.):
+    sigEfn = get_sigEfn(tarr,th,E51=E51)
     Vmixarr = Vmix_base(tarr,Dt,sigEfn,Vmax)
     if getVmixdot:
         Vmixfnspline = InterpolatedUnivariateSpline(tarr,Vmixarr)
@@ -41,9 +41,11 @@ def Vmix_base(t,Dt,sigEfn,Vmax):
     return 4*np.pi/3. * (6*Dt*t + sigEfn(t)**2)**(1.5) #kpc^3
     #return np.minimum(4*np.pi/3. * (6*Dt*t + sigEfn(t)**2)**(1.5),Vmax)
 def get_sigEfn(tarr,th,E51=1,zm=10**-3,betaC06=1): #Cioffi et al 1988 Rmerge in kpc
-    nfn = th.get_n_of_t_fn()
-    narr = nfn(tarr)
-    sigEarr = .069 * E51**.316 * (narr**-.367) * zm**-.051 * betaC06**-.429
+    #nfn = th.get_n_of_t_fn()
+    #narr = nfn(tarr)
+    #sigEarr = .069 * E51**.316 * (narr**-.367) * zm**-.051 * betaC06**-.429
+    sigE = .069 * E51**.316 * (th.nvir**-.367) * zm**-.051 * betaC06**-.429
+    sigEarr = np.zeros(tarr.shape)+sigE
     return interp1d(tarr,sigEarr)
 
 def _compute_mmix_grid(tasknum,dt,Vmixdotarr,rhoarr,Mmax):
@@ -61,7 +63,7 @@ def compute_mmix_grid(envname,numprocs=1,hires=False,timethis=True):
     Vmixdotarr = Vmixdotfn(tarr) #kpc^3
     numtasks = len(tarr)**2
 
-    Mhalo,zvir,vturb,lturb,nSN,trecovery,Dt,uSN,Vmax = envparams(envname)
+    Mhalo,zvir,vturb,lturb,nSN,trecovery,Dt,uSN,E51 = envparams(envname)
     Mmax = Mhalo*0.1551 #fb = .1551
 
     dt = float(tarr[1]-tarr[0])
@@ -221,30 +223,39 @@ def envparams(envname,gettarr=False):
     if envname=='atomiccoolinghalo':
         Mhalo = 10**8; zvir = 10
         nSN = 10; trecovery = 300
+        E51 = 1.0
     #elif envname=='atomiccoolinghalo4':
     #    Mhalo = 10**8; zvir = 10
     #    nSN = 10; trecovery = 300
     elif envname=='atomiccoolinghalo_lowDt':
         Mhalo = 10**8; zvir = 10
         nSN = 10; trecovery = 300
+        E51 = 1.0
     #elif envname=='atomiccoolinghalo_lowDt4':
     #    Mhalo = 10**8; zvir = 10
     #    nSN = 10; trecovery = 300
     elif envname=='atomiccoolinghalo_lowmass':
         Mhalo = 10**7.4; zvir = 10
         nSN = 10; trecovery = 300
+        E51 = 1.0
     #elif envname=='atomiccoolinghalo_lowmass4':
     #    Mhalo = 10**7.4; zvir = 10
     #    nSN = 10; trecovery = 300
     elif envname=='minihalo':
         Mhalo = 10**6; zvir = 25
         nSN = 2; trecovery = 10
+        E51 = 1.0
     #elif envname=='minihalo4':
     #    Mhalo = 10**6; zvir = 25
     #    nSN = 2; trecovery = 10
     elif envname=='minihalo_lowDt':
         Mhalo = 10**6; zvir = 25
         nSN = 2; trecovery = 10
+        E51 = 1.0
+    elif envname=='minihalo_lowE':
+        Mhalo = 10**6; zvir = 25
+        nSN = 2; trecovery = 10
+        E51 = 0.01 #10^49 ergs
     else:
         raise ValueError("invalid envname: "+envname)
 
@@ -256,6 +267,6 @@ def envparams(envname,gettarr=False):
     Dt =  vturbkpcMyr * lturb / 3.0 #kpc^2/Myr
     uSN = nSN/(trecovery * (4*np.pi/3.) * (10*lturb)**3) #SN/Myr/kpc^3
 
-    rhovir = th.nvir * th.mu * 24705449.8 #Msun/kpc^3
-    Vmax = (th.fb*Mhalo)/(rhovir)
-    return Mhalo,zvir,vturb,lturb,nSN,trecovery,Dt,uSN,Vmax
+    #rhovir = th.nvir * th.mu * 24705449.8 #Msun/kpc^3
+    #Vmax = (th.fb*Mhalo)/(rhovir)
+    return Mhalo,zvir,vturb,lturb,nSN,trecovery,Dt,uSN,E51
