@@ -31,30 +31,33 @@ if __name__=="__main__":
     #sfrlist = args[1:]
 
     envname='atomiccoolinghalo'
-    #sfrlist = ['fixTS500','10xTS500']
-    sfrlist = ['burstachsimTS500','burstachsimloTS500']
+    sfrlist = ['burstachsimTS500','burstachsloTS500']
     labellist = ['ACH burst 500','ACH burstlo 500']
+        #sfrlist = ['fixTS500','10xTS500']
 
     #envname='atomiccoolinghalo_lowDt'
     #sfrlist = ['fixTS500','10xTS500']
     #labellist = ['ACH fix 500','ACH 10x 500']
 
-    #envname='minihalo'
-    ##sfrlist = ['fixTS150']
-    #sfrlist = ['mhsimTS150']
-    #labellist = ['MH 150']
+    fig,axarr = plt.subplots(2,2,sharex=True)
+    for sfrname in sfrlist:
+        plot_one_sfr(axarr,envname,sfrname)
+    plt.legend(labellist,loc='best',fontsize=10)
+    plt.savefig("PLOTS/sfr_"+envname+".png",bbox_inches='tight')
+
+#    envlist = ['minihalo','minihalo_lowE']
+#    sfrlist = ['mhsimTS150']
+#    labellist = ['MH','MH E49']
+#        #sfrlist = ['fixTS150']
+#    fig,axarr = plt.subplots(2,2,sharex=True)
+#    for envname in envlist:
+#        for sfrname in sfrlist:
+#            plot_one_sfr(axarr,envname,sfrname)
+#    plt.legend(labellist,loc='best',fontsize=10)
+#    plt.savefig("PLOTS/sfr_minihalo.png",bbox_inches='tight')
+    #plt.show()
 
     #envname='minihalo_lowDt'
     #sfrlist = ['fixTS150']
     #labellist = ['MH fix 150']
 
-    fig,axarr = plt.subplots(2,2,sharex=True)
-    for sfrname in sfrlist:
-        plot_one_sfr(axarr,envname,sfrname)
-    plt.legend(labellist,loc='best',fontsize=10)#,'ACH 10x 500','MH fix 150'],loc='best')
-    #sfrliststr = ""
-    #for sfrname in sfrlist:
-    #    sfrliststr += (sfrname+'_')
-    #sfrliststr = sfrliststr[:-1]
-    plt.savefig("PLOTS/sfr_"+envname+".png")
-    #plt.show()

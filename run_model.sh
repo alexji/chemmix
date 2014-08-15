@@ -1,5 +1,11 @@
 #!/bin/bash
-numprocs=8
+numprocs=16
+python run_model.py -j $numprocs --mmixgrid minihalo_z17 dummysfrname
+python run_model.py -j $numprocs --mmixgrid minihalo_z17_lowE dummysfrname
+python run_model.py -j $numprocs --mmixgrid minihalo_z20 dummysfrname
+python run_model.py -j $numprocs --mmixgrid minihalo_z20_lowE dummysfrname
+
+
 #python run_model.py -j $numprocs --mmixgrid atomiccoolinghalo dummysfrname
 #python run_model.py -j $numprocs --sfr --ckk --fMkk atomiccoolinghalo fixTS500
 #python run_model.py -j $numprocs --sfr --ckk --fMkk atomiccoolinghalo 10xTS500
@@ -15,7 +21,7 @@ numprocs=8
 #python run_model.py -j $numprocs --sfr --ckk --fMkk minihalo fixTS200
 #python run_model.py -j $numprocs --sfr --ckk --fMkk minihalo mhsimTS150 
 
-python run_model.py -j $numprocs --mmixgrid minihalo_lowE dummysfrname
+#python run_model.py -j $numprocs --mmixgrid minihalo_lowE dummysfrname
 #python run_model.py -j $numprocs --sfr --ckk --fMkk minihalo_lowE mhsimTS150 
 
 #python run_model.py -j $numprocs --mmixgrid minihalo_lowDt dummysfrname

@@ -11,9 +11,9 @@ from tophat import TopHat
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.integrate import trapz
 
-def get_Vmixfn(tarr,th,Dt,Vmax,getVmixdot=False,E51=1.):
+def get_Vmixfn(tarr,th,Dt,getVmixdot=False,E51=1.):
     sigEfn = get_sigEfn(tarr,th,E51=E51)
-    Vmixarr = Vmix_base(tarr,Dt,sigEfn,Vmax)
+    Vmixarr = Vmix_base(tarr,Dt,sigEfn)
     Vmixfn = interp1d(tarr,Vmixarr)
     if getVmixdot:
         Vmixfnspline = InterpolatedUnivariateSpline(tarr,Vmixarr)
@@ -23,9 +23,9 @@ def get_Vmixfn(tarr,th,Dt,Vmax,getVmixdot=False,E51=1.):
         return Vmixfn,Vmixdotfn
     else:
         return Vmixfn
-def get_Vmixarr(tarr,th,Dt,Vmax,getVmixdot=False,E51=1.):
+def get_Vmixarr(tarr,th,Dt,getVmixdot=False,E51=1.):
     sigEfn = get_sigEfn(tarr,th,E51=E51)
-    Vmixarr = Vmix_base(tarr,Dt,sigEfn,Vmax)
+    Vmixarr = Vmix_base(tarr,Dt,sigEfn)
     if getVmixdot:
         Vmixfnspline = InterpolatedUnivariateSpline(tarr,Vmixarr)
         Vmixdotspline = Vmixfnspline.derivative()
@@ -37,7 +37,7 @@ def get_Vmixarr(tarr,th,Dt,Vmax,getVmixdot=False,E51=1.):
     else:
         return Vmixarr
 
-def Vmix_base(t,Dt,sigEfn,Vmax):
+def Vmix_base(t,Dt,sigEfn):
     return 4*np.pi/3. * (6*Dt*t + sigEfn(t)**2)**(1.5) #kpc^3
     #return np.minimum(4*np.pi/3. * (6*Dt*t + sigEfn(t)**2)**(1.5),Vmax)
 def get_sigEfn(tarr,th,E51=1,zm=10**-3,betaC06=1): #Cioffi et al 1988 Rmerge in kpc
@@ -215,11 +215,23 @@ def gettarr(envname,hires=False):
         tmin = 0
         tmax = 1000
     elif 'minihalo' in envname:
-        tmin = 0
-        tmax = 200
+        if '_z' in envname:
+            parts = envname.split('_')
+            for part in parts:
+                if part[0]=='z':
+                    z = int(part[1:])
+                    break
+            tmin = 0
+            if z<25:
+                tmax = 500
+            else:
+                tmax = 200
+        else:
+            tmin = 0
+            tmax = 200
     return np.arange(tmin,tmax+dt,dt)
 
-def envparams(envname,gettarr=False):
+def envparams(envname):
     if envname=='atomiccoolinghalo':
         Mhalo = 10**8; zvir = 10
         nSN = 10; trecovery = 300
@@ -254,6 +266,22 @@ def envparams(envname,gettarr=False):
         E51 = 1.0
     elif envname=='minihalo_lowE':
         Mhalo = 10**6; zvir = 25
+        nSN = 2; trecovery = 10
+        E51 = 0.01 #10^49 ergs
+    elif envname=='minihalo_z20':
+        Mhalo = 10**6; zvir = 20
+        nSN = 2; trecovery = 10
+        E51 = 1.0
+    elif envname=='minihalo_z20_lowE':
+        Mhalo = 10**6; zvir = 20
+        nSN = 2; trecovery = 10
+        E51 = 0.01 #10^49 ergs
+    elif envname=='minihalo_z17':
+        Mhalo = 10**6; zvir = 17
+        nSN = 2; trecovery = 10
+        E51 = 1.0
+    elif envname=='minihalo_z17_lowE':
+        Mhalo = 10**6; zvir = 17
         nSN = 2; trecovery = 10
         E51 = 0.01 #10^49 ergs
     else:

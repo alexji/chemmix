@@ -73,7 +73,7 @@ if __name__=="__main__":
             ax.set_ylim(ylim); ax.set_yticklabels([])
             if kII==k2max: ax.set_xlabel('Mmix')
             #print kII,kIII,np.nansum(fMkk2[kII,kIII,:]),np.nansum(fMkk3[kII,kIII,:])
-    plt.savefig('PLOTS/fMkkgrid_'+envname+'_'+sfrname+'.png')
+    plt.savefig('PLOTS/fMkkgrid_'+envname+'_'+sfrname+'.png',bbox_inches='tight')
 
 #    for kp in range(kpmax+1):
 #        karr = np.arange(kp+1,kmax+1)

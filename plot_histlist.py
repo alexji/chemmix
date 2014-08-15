@@ -40,7 +40,7 @@ def plotone(envname,sfrname,postfix,options):
         ax.set_ylim((0,scale*1.1))
         ax.set_yticklabels([])
     if options.save:
-        plt.savefig('PLOTS/'+envname+'_'+sfrname+'_'+postfix+'_cfrac.png')
+        plt.savefig('PLOTS/'+envname+'_'+sfrname+'_'+postfix+'_cfrac.png',bbox_inches='tight')
     else:
         plt.show()
 
@@ -68,7 +68,7 @@ def plottwo(envname,sfrname,options):
             ax.set_ylim((0,scale*1.1))
             ax.set_yticklabels([])
     if options.save:
-        plt.savefig('PLOTS/'+envname+'_'+sfrname+'_pgrid.png')
+        plt.savefig('PLOTS/'+envname+'_'+sfrname+'_pgrid.png',bbox_inches='tight')
     else:
         plt.show()
             
@@ -97,7 +97,7 @@ def plotthree(envname,sfrname,options):
             ax.set_ylim((0,scale*1.1))
             ax.set_yticklabels([])
     if options.save:
-        plt.savefig('PLOTS/'+envname+'_'+sfrname+'_pgridzoom.png')
+        plt.savefig('PLOTS/'+envname+'_'+sfrname+'_pgridzoom.png',bbox_inches='tight')
     else:
         plt.show()
             
@@ -133,7 +133,7 @@ def plotfour(envname,sfrname,options):
         ax.set_ylim((0,scale*1.1))
         ax.set_yticklabels([])
     if options.save:
-        plt.savefig('PLOTS/'+envname+'_'+sfrname+'_pweightzoom.png')
+        plt.savefig('PLOTS/'+envname+'_'+sfrname+'_pweightzoom.png',bbox_inches='tight')
     else:
         plt.show()
         

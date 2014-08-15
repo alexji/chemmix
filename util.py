@@ -8,7 +8,7 @@ import scipy.special
 import backgroundmodel
 
 def load_Vmix(envname,get_th=False,get_thrho=False,getVmixdot=False,getarrays=False):
-    Mhalo,zvir,vturb,lturb,nSN,trecovery,Dt,uSN,Vmax = backgroundmodel.envparams(envname)
+    Mhalo,zvir,vturb,lturb,nSN,trecovery,Dt,uSN,E51 = backgroundmodel.envparams(envname)
     if getarrays: myfn = backgroundmodel.get_Vmixarr
     else: myfn = backgroundmodel.get_Vmixfn
 
@@ -16,12 +16,12 @@ def load_Vmix(envname,get_th=False,get_thrho=False,getVmixdot=False,getarrays=Fa
     th = TopHat(Mhalo=Mhalo,zvir=zvir)
     rhofn = th.get_rho_of_t_fn()
     if getVmixdot:
-        Vmix,Vmixdot = myfn(tarr,th,Dt,Vmax,getVmixdot=True)
+        Vmix,Vmixdot = myfn(tarr,th,Dt,getVmixdot=True,E51=E51)
         if get_thrho: return th,rhofn,Vmix,Vmixdot
         if get_th: return th,Vmix,Vmixdot
         return Vmix,Vmixdot
     else:
-        Vmix = myfn(tarr,th,Dt,Vmax)
+        Vmix = myfn(tarr,th,Dt,E51=E51)
         if get_thrho: return th,rhofn,Vmix
         if get_th: return th,Vmix
         return Vmix

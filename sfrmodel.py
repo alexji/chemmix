@@ -19,6 +19,10 @@ def compute_umufns(envname,sfrname,tarr):
 
     if 'burst' in sfrname:
         saveuIIIburst(label,tarr,Vmixfn,u0III,ttIII,50) #tburst=50Myr
+    elif 'h14' in sfrname:
+        nSN = bgm.envparams(envparams)[4]
+        Rvir = th.Rvir
+        saveuIIIh14(label,tarr,Vmixfn,nSN,Rvir)
     else:
         saveuIIIdata(label,tarr,u_init,Vmixfn,th,u0III,ttIII,tstop)
     saveuIIdata(label,Vmixfn,th,u0II,ttII,tstop)
@@ -71,6 +75,14 @@ def saveuIIIburst(label,tarr,Vmixfn,u0III,ttIII,tburst):
     mufn = get_mufn(Vmixfn,ufn,tarr)
     muarr = mufn(tarr)
     np.savez('SFRDATA/'+label+'_uIII.npz',tarr=tarr,uarr=uarr,muarr=muarr)
+def saveuIIIh14(label,tarr,Vmixfn,nSN,Rvir):
+    h14sfr = get_h14sfrfn()
+    h14norm = 2225.63075682507 #integrated with quad from 50 to 500
+    uarr = h14sfr(tarr)/h14norm * nSN / (4*np.pi/3 * Rvir**3)
+    ufn = interp1d(tarr,uarr,bounds_error=False,fill_value=0)
+    mufn = get_mufn(Vmixfn,ufn,tarr)
+    muarr = mufn(tarr)
+    np.savez('SFRDATA/'+label+'_uIII.npz',tarr=tarr,uarr=uarr,muarr=muarr)
 def saveuIIIdata(label,tarr,u_init,Vmixfn,th,u0,tthresh,tstop):
     uarr,muarr = solveforuIII(tarr,u_init,Vmixfn,th,u0,tthresh,tstop,verbose=True)
     np.savez('SFRDATA/'+label+'_uIII.npz',tarr=tarr,uarr=uarr,muarr=muarr)
@@ -86,6 +98,24 @@ def loadmuIIIfn(label,retarrays=False):
     fn = interp1d(tarr,muarr,bounds_error=False,fill_value=0)
     if retarrays: return fn,tarr,muarr
     return fn
+
+def get_h14sfrfn():
+    import asciitable
+    import scipy.interpolate as interpolate
+    d = asciitable.read("SFRDATA/hirano14.csv")
+    d.dtype.names = ('z','t','N')
+    tint = np.concatenate(([0,50],d['t'][::-1],[500,1000]))
+    Nint = np.concatenate(([0,0,],d['N'][::-1],[0,0]))
+    f = interpolate.UnivariateSpline(tint,Nint)
+    tmin = 55; tmax = 496 #found by trial and error to be close/above 0
+    myfn = functools.partial(_h14sfrfn,f=f,tmin=tmin,tmax=tmax)
+    return myfn
+def _h14sfrfn(t,f,tmin,tmax):
+    t = np.ravel(t)
+    out = f(t)
+    out[t<tmin] = 0
+    out[t>tmax] = 0
+    return out
 
 def Qp(muIII):
     return np.exp(-muIII-(muIII**2)/4.)
@@ -166,7 +196,7 @@ def sfrparams(envname,sfrname,verbose=False):
         raise ValueError("Invalid sfrname: "+sfrname+" (requires 'TS' to denote tstop)")
     ts = int(ts)
 
-    Mhalo,zvir,vturb,lturb,nSN,trecovery,Dt,uSN,Vmax = bgm.envparams(envname)
+    Mhalo,zvir,vturb,lturb,nSN,trecovery,Dt,uSN,E51 = bgm.envparams(envname)
     u0III = uSN
     ttIII = 100
     if 'minihalo' in envname:
@@ -177,6 +207,15 @@ def sfrparams(envname,sfrname,verbose=False):
     if 'burst' in sfrname:
         assert 'atomiccoolinghalo' in envname
         #ttIII = 100; ttII = 400; tburst = 50
+
+    if 'h14' in sfrname:
+        assert 'minihalo' in envname
+        zvir = bgm.envparams(envparams)[1]
+        import cosmology; c = cosmology.cosmology(Ol=0.7,Om=0.3,h=0.7)
+        u0III = -1; ttIII = -1 #not used
+        ttII = c.t_age(zvir)
+        u0II = 0.4
+        #TODO I think this is the wrong way to proceed...
     
     if "fix" in sfrname:
         u0II = 0.4

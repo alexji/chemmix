@@ -7,7 +7,7 @@ import util
 
 def plot_one_bgm(axarr,envname,**kwargs):
     tarr = bgm.gettarr(envname); tmax=np.max(tarr)
-    Mhalo,zvir,vturb,lturb,nSN,trecovery,Dt,uSN,Vmax = bgm.envparams(envname)
+    Mhalo,zvir,vturb,lturb,nSN,trecovery,Dt,uSN,E51 = bgm.envparams(envname)
     th,rho,Vmix,Vmixdot = util.load_Vmix(envname,get_thrho=True,getVmixdot=True)
     ((ax0,ax1),(ax2,ax3)) = axarr
     ax0.plot(tarr,rho(tarr),**kwargs)
@@ -23,6 +23,7 @@ def plot_one_bgm(axarr,envname,**kwargs):
     ax1.plot(tarr,Vmix(tarr),**kwargs)
     ax1.set_ylabel(r'$V_{\rm mix}$')
     ax1.set_xlabel('t')
+    ax1.set_ylim((0,ax1.get_ylim()[-1]))
 
     ax3.plot(tarr,Vmixdot(tarr),**kwargs)
     ax3.set_ylabel(r'$\dot{V}_{\rm mix}$')
@@ -41,7 +42,8 @@ def plot_one_bgm(axarr,envname,**kwargs):
     ax2.text(.75*tmax,.15*tmax,r'$M_{\rm mix}(t,\tau)$',fontsize=10)
 
 if __name__=="__main__":
-    envlist = ['atomiccoolinghalo','minihalo','atomiccoolinghalo_lowDt','minihalo_lowDt']
+    #envlist = ['minihalo_lowE','atomiccoolinghalo','minihalo','atomiccoolinghalo_lowDt','minihalo_lowDt']
+    envlist = ['minihalo_z17','minihalo_z17_lowE','minihalo_z20','minihalo_z20_lowE']
     for envname in envlist:
         fig,axarr = plt.subplots(2,2)
         fig.subplots_adjust(hspace=.25,wspace=.3)

@@ -16,11 +16,14 @@ if __name__=="__main__":
     #sfrname = 'fidTS300'
     #postfix = 'testp0.50'
 
-    histdict = util.load_chemgridhist(envname,sfrname,postfix)
-    yII = histdict['yII']
-    yIII= histdict['yIII']
+    #histdict = util.load_chemgridhist(envname,sfrname,postfix)
+    histlist = util.load_histlist(envname,sfrname,postfix)
+    histdict = histlist[1] #kIII==1
+    #yII = histdict['yII']
+    #yIII= histdict['yIII']
     #binlist = histdict['binlist']
-    elemnames = yII.elemnames
+    #elemnames = yII.elemnames
+    elemnames = ['C','O','Mg','Si','Ca','Fe']
     numyields = len(elemnames)
     #TODO
     #import pickle
