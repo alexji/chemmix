@@ -118,17 +118,19 @@ def montecarloyields(envname,sfrname,postfix,
 if __name__=="__main__":
     binwidth = .1
 
-    envname='atomiccoolinghalo'
+    #envname='atomiccoolinghalo'
     #envname='atomiccoolinghalo_lowDt'
     #sfrname='10xTS500'
     #sfrname='fixTS500'
-    sfrname='burstachsimTS500'
+    #sfrname='burstachsimTS500'
     #sfrname='burstachsimloTS500'
-    binlist = [np.arange(-10,0+binwidth,binwidth) for i in range(6)]
-
-    #envname = 'minihalo'
-    #sfrname = 'fixTS150'
     #binlist = [np.arange(-10,0+binwidth,binwidth) for i in range(6)]
+
+    envname = 'minihalo'
+    #envname = 'minihalo_lowE'
+    #sfrname = 'fixTS150'
+    sfrname = 'betalogitTS200'
+    binlist = [np.arange(-10,0+binwidth,binwidth) for i in range(6)]
 
     salimf  = util.relative_imf(np.array([13,15,18,20,25,30,40.]),2.35,norm=True) #salpeter imf
     popIIy  = yields.ryN06(salimf)

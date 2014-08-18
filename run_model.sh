@@ -1,10 +1,27 @@
 #!/bin/bash
-numprocs=16
-python run_model.py -j $numprocs --mmixgrid minihalo_z17 dummysfrname
-python run_model.py -j $numprocs --mmixgrid minihalo_z17_lowE dummysfrname
-python run_model.py -j $numprocs --mmixgrid minihalo_z20 dummysfrname
-python run_model.py -j $numprocs --mmixgrid minihalo_z20_lowE dummysfrname
+numprocs=8
+#python run_model.py -j $numprocs --mmixgrid minihalo dummysfrname
+#python run_model.py -j $numprocs --mmixgrid minihalo_lowE dummysfrname
+#python run_model.py -j $numprocs --mmixgrid minihalo_z17 dummysfrname
+#python run_model.py -j $numprocs --mmixgrid minihalo_z17_lowE dummysfrname
+#python run_model.py -j $numprocs --mmixgrid minihalo_z20 dummysfrname
+#python run_model.py -j $numprocs --mmixgrid minihalo_z20_lowE dummysfrname
 
+#python run_model.py -j $numprocs --hires --mmixgrid minihalo dummysfrname
+#python run_model.py -j $numprocs --hires --mmixgrid minihalo_lowE dummysfrname
+#python run_model.py -j $numprocs --hires --ckk --fMkk minihalo betalogitTS200
+#python run_model.py -j $numprocs --hires --ckk --fMkk minihalo_lowE betalogitTS200
+
+#python run_model.py -j $numprocs --sfr --ckk --fMkk minihalo betalogitTS200
+#python run_model.py -j $numprocs --sfr --ckk --fMkk minihalo_lowE betalogitTS200
+python run_model.py -j $numprocs --sfr --ckk --fMkk minihalo betalogitVmaxTS200
+python run_model.py -j $numprocs --sfr --ckk --fMkk minihalo_lowE betalogitVmaxTS200
+
+#python run_model.py -j $numprocs --sfr --ckk --fMkk minihalo_z17 betalogitTS200
+#python run_model.py -j $numprocs --sfr --ckk --fMkk minihalo_z17_lowE betalogitTS200
+
+#python run_model.py -j $numprocs --sfr --ckk --fMkk minihalo_z20 betalogitTS200
+#python run_model.py -j $numprocs --sfr --ckk --fMkk minihalo_z20_lowE betalogitTS200
 
 #python run_model.py -j $numprocs --mmixgrid atomiccoolinghalo dummysfrname
 #python run_model.py -j $numprocs --sfr --ckk --fMkk atomiccoolinghalo fixTS500

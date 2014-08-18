@@ -2,7 +2,7 @@ import numpy as np
 import sys
 import time
 
-from multiprocessing import Pool
+from multiprocessing import Pool, Array
 import functools
 
 import util
@@ -11,9 +11,10 @@ from tophat import TopHat
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.integrate import trapz
 
-def get_Vmixfn(tarr,th,Dt,getVmixdot=False,E51=1.):
+def get_Vmixfn(tarr,th,Dt,getVmixdot=False,E51=1.,Vmax=None):
     sigEfn = get_sigEfn(tarr,th,E51=E51)
     Vmixarr = Vmix_base(tarr,Dt,sigEfn)
+    if Vmax != None: Vmixarr[Vmixarr>Vmax]=Vmax
     Vmixfn = interp1d(tarr,Vmixarr)
     if getVmixdot:
         Vmixfnspline = InterpolatedUnivariateSpline(tarr,Vmixarr)
@@ -23,9 +24,10 @@ def get_Vmixfn(tarr,th,Dt,getVmixdot=False,E51=1.):
         return Vmixfn,Vmixdotfn
     else:
         return Vmixfn
-def get_Vmixarr(tarr,th,Dt,getVmixdot=False,E51=1.):
+def get_Vmixarr(tarr,th,Dt,getVmixdot=False,E51=1.,Vmax=None):
     sigEfn = get_sigEfn(tarr,th,E51=E51)
     Vmixarr = Vmix_base(tarr,Dt,sigEfn)
+    if Vmax != None: Vmixarr[Vmixarr>Vmax]=Vmax
     if getVmixdot:
         Vmixfnspline = InterpolatedUnivariateSpline(tarr,Vmixarr)
         Vmixdotspline = Vmixfnspline.derivative()
@@ -87,10 +89,10 @@ def _compute_ckk(tasknum,k3max,wII,muII,wIII,muIII,uII,tarr):
 
 def compute_ckk(envname,sfrname,
                  k2max,k3max,
-                 numprocs=1):
+                 numprocs=1,hires=False):
 
     uII,uIII,muII,muIII,wII,wIII = util.load_sfr(envname,sfrname)
-    tarr = gettarr(envname) #np.linspace(tmin,tmax+.01,.01)
+    tarr = gettarr(envname,hires=hires) #np.linspace(tmin,tmax+.01,.01)
 
     pool = Pool(numprocs)
     myfunc = functools.partial(_compute_ckk,k3max=k3max,
@@ -101,13 +103,30 @@ def compute_ckk(envname,sfrname,
     pool.close()
     return cgrid/np.nansum(cgrid)
 
+def _get_DMlist_smem(i,Mbins,tarr,sMmixgrid):
+    Mmin = Mbins[i]; Mmax = Mbins[i+1]
+    # Generate view of shared memory array
+    n = len(tarr)
+    Mmixgrid = util.get_mmixgrid_from_shared(n,sMmixgrid)
+    iix,iiy = np.where(np.logical_and(Mmixgrid > Mmin, Mmixgrid <= Mmax))
+    these_t   = tarr[iix]
+    these_tau = tarr[iiy]
+    return np.array([these_t,these_tau]).transpose()
+def get_DMlist_smem(Mbins,tarr,sMmixgrid,numprocs=1):
+    nbins = len(Mbins)-1
+    myfunc = functools.partial(_get_DMlist,
+                               Mbins=Mbins,tarr=tarr,sMmixgrid=sMmixgrid)
+    pool = Pool(numprocs)
+    DMlist = pool.map(myfunc,range(nbins))
+    pool.close()
+    return DMlist
+
 def _get_DMlist(i,Mbins,tarr,Mmixgrid):
     Mmin = Mbins[i]; Mmax = Mbins[i+1]
     iix,iiy = np.where(np.logical_and(Mmixgrid > Mmin, Mmixgrid <= Mmax))
     these_t   = tarr[iix]
     these_tau = tarr[iiy]
     return np.array([these_t,these_tau]).transpose()
-
 def get_DMlist(Mbins,tarr,Mmixgrid,numprocs=1):
     nbins = len(Mbins)-1
     myfunc = functools.partial(_get_DMlist,
@@ -209,7 +228,7 @@ def compute_fMkk(envname,sfrname,
     print "Total time: %f" % (time.time()-allstart)
 
 def gettarr(envname,hires=False):
-    if hires: dt = .01
+    if hires or ('hires' in envname): dt = .01
     else: dt = 0.1
     if 'atomiccoolinghalo' in envname:
         tmin = 0
@@ -232,6 +251,9 @@ def gettarr(envname,hires=False):
     return np.arange(tmin,tmax+dt,dt)
 
 def envparams(envname):
+    if '_hires' in envname:
+        envname = envname.replace('_hires','')
+
     if envname=='atomiccoolinghalo':
         Mhalo = 10**8; zvir = 10
         nSN = 10; trecovery = 300

@@ -30,31 +30,36 @@ if __name__=="__main__":
     #envname = args[0]
     #sfrlist = args[1:]
 
-    envname='atomiccoolinghalo'
-    sfrlist = ['burstachsimTS500','burstachsloTS500']
-    labellist = ['ACH burst 500','ACH burstlo 500']
+    #envname='atomiccoolinghalo'
+    #sfrlist = ['burstachsimTS500','burstachsloTS500']
+    #labellist = ['ACH burst 500','ACH burstlo 500']
         #sfrlist = ['fixTS500','10xTS500']
 
     #envname='atomiccoolinghalo_lowDt'
     #sfrlist = ['fixTS500','10xTS500']
     #labellist = ['ACH fix 500','ACH 10x 500']
 
-    fig,axarr = plt.subplots(2,2,sharex=True)
-    for sfrname in sfrlist:
-        plot_one_sfr(axarr,envname,sfrname)
-    plt.legend(labellist,loc='best',fontsize=10)
-    plt.savefig("PLOTS/sfr_"+envname+".png",bbox_inches='tight')
+    #fig,axarr = plt.subplots(2,2,sharex=True)
+    #for sfrname in sfrlist:
+    #    plot_one_sfr(axarr,envname,sfrname)
+    #plt.legend(labellist,loc='best',fontsize=10)
+    #plt.savefig("PLOTS/sfr_"+envname+".png",bbox_inches='tight')
 
-#    envlist = ['minihalo','minihalo_lowE']
+    envlist = ['minihalo','minihalo_lowE']
+    sfrlist = ['betalogitTS200']
+    sfrlist = ['betalogitVmaxTS200']
 #    sfrlist = ['mhsimTS150']
-#    labellist = ['MH','MH E49']
+    labellist = ['MHbl200','MHlEbl200']#['MH','MH E49']
+    labellist = ['MHVmbl200','MHlEVmbl200']#['MH','MH E49']
 #        #sfrlist = ['fixTS150']
-#    fig,axarr = plt.subplots(2,2,sharex=True)
-#    for envname in envlist:
-#        for sfrname in sfrlist:
-#            plot_one_sfr(axarr,envname,sfrname)
-#    plt.legend(labellist,loc='best',fontsize=10)
-#    plt.savefig("PLOTS/sfr_minihalo.png",bbox_inches='tight')
+    fig,axarr = plt.subplots(2,2,sharex=True)
+    for envname in envlist:
+        for sfrname in sfrlist:
+            plot_one_sfr(axarr,envname,sfrname)
+    plt.legend(labellist,loc='best',fontsize=10)
+    #plt.savefig("PLOTS/sfr_minihalo.png",bbox_inches='tight')
+#    plt.savefig("PLOTS/sfr_minihalo_bl.png",bbox_inches='tight')
+    plt.savefig("PLOTS/sfr_minihalo_Vm_bl.png",bbox_inches='tight')
     #plt.show()
 
     #envname='minihalo_lowDt'

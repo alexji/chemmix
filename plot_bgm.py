@@ -43,7 +43,8 @@ def plot_one_bgm(axarr,envname,**kwargs):
 
 if __name__=="__main__":
     #envlist = ['minihalo_lowE','atomiccoolinghalo','minihalo','atomiccoolinghalo_lowDt','minihalo_lowDt']
-    envlist = ['minihalo_z17','minihalo_z17_lowE','minihalo_z20','minihalo_z20_lowE']
+    #envlist = ['minihalo_z17','minihalo_z17_lowE','minihalo_z20','minihalo_z20_lowE']
+    envlist = ['minihalo_hires','minihalo_lowE_hires']
     for envname in envlist:
         fig,axarr = plt.subplots(2,2)
         fig.subplots_adjust(hspace=.25,wspace=.3)

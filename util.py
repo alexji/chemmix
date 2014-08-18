@@ -6,8 +6,9 @@ from tophat import TopHat
 import scipy.special
 
 import backgroundmodel
+import multiprocessing as mp
 
-def load_Vmix(envname,get_th=False,get_thrho=False,getVmixdot=False,getarrays=False):
+def load_Vmix(envname,get_th=False,get_thrho=False,getVmixdot=False,getarrays=False,Vmax=None):
     Mhalo,zvir,vturb,lturb,nSN,trecovery,Dt,uSN,E51 = backgroundmodel.envparams(envname)
     if getarrays: myfn = backgroundmodel.get_Vmixarr
     else: myfn = backgroundmodel.get_Vmixfn
@@ -16,18 +17,28 @@ def load_Vmix(envname,get_th=False,get_thrho=False,getVmixdot=False,getarrays=Fa
     th = TopHat(Mhalo=Mhalo,zvir=zvir)
     rhofn = th.get_rho_of_t_fn()
     if getVmixdot:
-        Vmix,Vmixdot = myfn(tarr,th,Dt,getVmixdot=True,E51=E51)
+        Vmix,Vmixdot = myfn(tarr,th,Dt,getVmixdot=True,E51=E51,Vmax=Vmax)
         if get_thrho: return th,rhofn,Vmix,Vmixdot
         if get_th: return th,Vmix,Vmixdot
         return Vmix,Vmixdot
     else:
-        Vmix = myfn(tarr,th,Dt,E51=E51)
+        Vmix = myfn(tarr,th,Dt,E51=E51,Vmax=Vmax)
         if get_thrho: return th,rhofn,Vmix
         if get_th: return th,Vmix
         return Vmix
 
 def load_mmixgrid(envname):
     return np.load(fname_mmixgrid(envname))
+
+def load_mmixgrid_smem(envname):
+    print "Loading mmixgrid for "+envname
+    mmg = np.load(fname_mmixgrid(envname))
+    n = mmg.shape[0]
+    print "Converting to shared memory..."
+    shared_mmg = mp.Array('d',mmg.reshape(-1))
+    return n,shared_mmg
+def get_mmixgrid_from_shared(n,shared_mmg):
+    return np.reshape(np.frombuffer(shared_mmg.get_obj()),(n,n))
 
 def load_sfr(envname,sfrname):
     label = sfu.get_sfrlabel(envname,sfrname)

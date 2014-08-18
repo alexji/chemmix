@@ -4,7 +4,7 @@ from optparse import OptionParser
 from plot_util import density_contour,plot1dhist
 import util
 
-def plot_cfrac_panel(ax,histdict,CFecrit=0.75,scale=1.0):
+def calc_cfrac(histdict,CFecrit=0.75,retedges=False):
     iC = 0; iFe = 5
     H,edgesC,edgesFe = histdict[(iFe,iC)]
     pdf = util.hist2d2pdf(H,edgesC,edgesFe)
@@ -15,32 +15,41 @@ def plot_cfrac_panel(ax,histdict,CFecrit=0.75,scale=1.0):
     for i,Fe in enumerate(midFe):
         iiCrich = midC-Fe > CFecrit
         cfrac[i] = np.sum(H[i,iiCrich])/np.sum(H[i,:])
+        if np.isnan(cfrac[i]): cfrac[i]=0.
+    if retedges: return edgesFe,cfrac
+    return midFe,cfrac
+def plot_cfrac_panel(ax,histdict,CFecrit=0.75,scale=1.0):
+    edgesFe,cfrac = calc_cfrac(histdict,CFecrit,retedges=True)
     ax.plot(edgesFe[:-1],cfrac*scale,'b-',drawstyle='steps')
 
 def plotone(envname,sfrname,postfix,options):
     k2max,k3max,cgrid = util.load_ckk(envname,sfrname)
-
+    histlist = util.load_histlist(envname,sfrname,postfix)
+    filename='PLOTS/'+envname+'_'+sfrname+'_'+postfix+'_cfrac.png'
     scale = 0.5
-
+    _plotone(filename,k2max,k3max,histlist,scale,options.save)
+def _plotone(filename,k2max,k3max,histlist,scale,xlim=None,save=True,
+             kIIlabel='k_{II}',kIIIlabel='k_{III}',data=True):
     fig,axarr = plt.subplots(k2max+1,k3max+1,sharex=True,sharey=True,figsize=(20,20))
     fig.subplots_adjust(hspace=0,wspace=0)
-    histlist = util.load_histlist(envname,sfrname,postfix)
     for tasknum,histdict in enumerate(histlist):
         kII,kIII = divmod(tasknum,k3max+1)
         ax = axarr[kII,kIII]
-        if kII==0: ax.set_title(r'$k_{III}='+str(kIII)+r'$')
-        if kIII==0: ax.set_ylabel(r'$k_{II}='+str(kII)+r'$')
+        if kII==0: ax.set_title(r'$'+kIIIlabel+'='+str(kIII)+r'$')
+        if kIII==0: ax.set_ylabel(r'$'+kIIlabel+'='+str(kII)+r'$')
         if tasknum==0:
             continue
         plot_cfrac_panel(ax,histdict,scale=scale)
         h,x = histdict[(5,5)]
         h = h.astype(float)/np.sum(h)
         plot1dhist(h,x,ax=ax,color='red')
-        ax.set_xlim((x[0],x[-1]))
+        if data: ax.plot([-4,-3],[scale*0.75,scale*0.3],'ko-')
+        if xlim==None: ax.set_xlim((x[0],x[-1]))
+        else: ax.set_xlim(xlim)
         ax.set_ylim((0,scale*1.1))
         ax.set_yticklabels([])
-    if options.save:
-        plt.savefig('PLOTS/'+envname+'_'+sfrname+'_'+postfix+'_cfrac.png',bbox_inches='tight')
+    if save:
+        plt.savefig(filename,bbox_inches='tight')
     else:
         plt.show()
 

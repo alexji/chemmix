@@ -1,11 +1,13 @@
 #!/bin/bash
 cd /spacebase/data/alexji/karlsson-model
-envname=atomiccoolinghalo
+#envname=atomiccoolinghalo
 #envname=atomiccoolinghalo_lowDt
-#envname=minihalo
+envname=minihalo
+#envname=minihalo_lowE
 
+for sfrname in betalogitTS200
 #for sfrname in fixTS500 10xTS500 
-for sfrname in burstachsimTS500 #burst10xTS500 
+#for sfrname in burstachsimTS500 #burst10xTS500 
 #for sfrname in fixTS150 #fixTS200
 do
 python plot_histlist.py --save --plottwo $envname $sfrname
